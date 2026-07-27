@@ -5,6 +5,14 @@ the planned environment; a compute action chooses how the planner gathers
 evidence about a branch.
 """
 
+from .agent import MCTSAgent
+from .config import MCTSConfig
+from .gym_wrapper import (
+    DeepCopySnapshotStrategy,
+    MCTSEnvWrapper,
+    NativeSnapshotStrategy,
+    SnapshotError,
+)
 from .models import GenerativeModel, ModelPortfolio
 from .planner import PlanResult, Planner
 from .routing import ComputeRouter, RouterContext
@@ -21,13 +29,19 @@ __all__ = [
     "ComputeRouter",
     "Fidelity",
     "GenerativeModel",
+    "DeepCopySnapshotStrategy",
+    "MCTSAgent",
+    "MCTSConfig",
+    "MCTSEnvWrapper",
     "ModelObservation",
     "ModelPortfolio",
     "ModelQuote",
+    "NativeSnapshotStrategy",
     "PlanResult",
     "Planner",
     "RouterContext",
     "SearchBudget",
+    "SnapshotError",
 ]
 
 __version__ = "0.1.0a0"

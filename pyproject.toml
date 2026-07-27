@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "montecarlgym"
+version = "0.1.0a0"
+description = "Gymnasium-compatible MCTS and adaptive multi-fidelity planning"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "MonteCarloGym Contributors"}]
+keywords = [
+  "mcts",
+  "gymnasium",
+  "planning",
+  "agents",
+  "model-routing",
+  "test-time-compute",
+]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = []
+
+[project.optional-dependencies]
+gym = ["gymnasium>=1.0"]
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11"]
+research = ["numpy>=1.26", "pandas>=2.2", "scipy>=1.13"]
+
+[project.scripts]
+mcg-experiment = "montecarlgym.experiments.runner:main"
+
+[project.urls]
+Documentation = "https://github.com/montecarlgym/montecarlgym"
+Repository = "https://github.com/montecarlgym/montecarlgym"
+Issues = "https://github.com/montecarlgym/montecarlgym/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

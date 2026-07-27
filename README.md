@@ -19,9 +19,12 @@ The repository is deliberately split into two layers:
    simulation, branch-level routing, token/depth budgets, stopping rules,
    verified replay, discrepancy learning, and optional causal correction.
 
-This scaffold contains:
+The repository contains:
 
 - a revised architecture and API specification;
+- a complete Phase 1 classical UCT vertical slice with transactional
+  Gymnasium-style simulation, stochastic outcome links, random rollout, mean
+  backup, hard budgets, and subtree reuse;
 - an experiment protocol suitable for a research implementation;
 - a runnable, dependency-free toy benchmark for multi-fidelity routing;
 - tests and CI;
@@ -39,6 +42,7 @@ python experiments/run.py \
   --config experiments/configs/toy.json \
   --output output/toy
 python -m unittest discover -s tests -v
+PYTHONPATH=src python examples/classical_mcts.py
 ```
 
 The command writes per-run JSONL records and an aggregate `summary.json`.
@@ -55,10 +59,17 @@ The command writes per-run JSONL records and an aggregate `summary.json`.
 
 ## Status
 
-This is an architecture and experiment-harness scaffold. The classical MCTS
-kernel and production integrations described in the documents are the planned
-implementation target. The included Python code establishes the new protocols
-and makes the controlled multi-fidelity experiment executable.
+Phase 1 is implemented: one dependency-injected engine provides classical UCT,
+transactional native/deep-copy simulation, explicit state/action/outcome graph
+statistics and paths, random rollouts, mean backup, hard iteration/call/cost
+budgets, `MCTSAgent.compute_action()`, and basic subtree reuse. The dependency-
+free fixture example runs without Gymnasium; Gymnasium remains an optional
+extra.
+
+PUCT, Bayesian search, RAVE/MAST, learned routing, remote models, BrowserGym,
+and distributed execution remain planned. The adaptive toy harness validates
+interfaces and accounting only; it is not evidence for the paper's empirical
+claims.
 
 ## License
 

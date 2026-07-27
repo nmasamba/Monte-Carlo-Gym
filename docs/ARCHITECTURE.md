@@ -922,8 +922,9 @@ montecarlgym/
     references.bib
 ```
 
-The present scaffold implements the adaptive protocols and controlled toy
-harness first. Classical kernel modules are the next implementation milestone.
+The repository now implements the Phase 1 classical UCT vertical slice and the
+adaptive protocols/controlled toy harness. Later classical presets and learned
+adaptive-compute integrations remain implementation milestones.
 
 ## 16. Configuration and dependency injection
 

@@ -10,7 +10,6 @@ from typing import Any
 
 from .snapshot import SnapshotError
 
-
 _IMMUTABLE = (type(None), bool, int, float, complex, str, bytes, range, Enum)
 _CALLABLE_ATOMS = (
     types.BuiltinFunctionType,
@@ -36,7 +35,7 @@ def _assert_independent(original: Any, clone: Any) -> None:
             continue
         if left is right:
             if isinstance(left, tuple):
-                pending.extend(zip(left, right))
+                pending.extend(zip(left, right, strict=True))
                 continue
             if isinstance(left, frozenset):
                 # A shared immutable container is safe; its elements cannot be
@@ -61,7 +60,7 @@ def _assert_independent(original: Any, clone: Any) -> None:
         elif isinstance(left, (list, tuple)):
             if len(left) != len(right):
                 raise SnapshotError("deepcopy changed a sequence length")
-            pending.extend(zip(left, right))
+            pending.extend(zip(left, right, strict=True))
         elif hasattr(left, "__dict__"):
             left_vars = vars(left)
             right_vars = vars(right)

@@ -9,12 +9,18 @@ import sys
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from ..planner import Planner
-from ..types import SearchBudget
+from ..types import SearchBudget, State
 from .artifacts import ArtifactWriter
 from .metrics import aggregate_episode_records
+from .multifidelity_tree import (
+    ShallowTreeConfig,
+    make_shallow_tree_planner,
+    make_shallow_tree_portfolio,
+    sample_shallow_tree,
+)
 from .toy import (
     PLANNER_TYPES,
     ToyBenchmarkConfig,
@@ -33,7 +39,7 @@ def _planner(method: str, settings: dict[str, Any]) -> Planner:
         planner_type = PLANNER_TYPES[method]
     except KeyError as exc:
         raise ValueError(f"unknown method: {method}") from exc
-    return planner_type(**settings)
+    return cast(Planner, planner_type(**settings))
 
 
 def _validate_config(config: dict[str, Any]) -> None:
@@ -56,7 +62,17 @@ def run_experiment(
     """Run paired seeds, persist episode records, and return aggregate metrics."""
 
     _validate_config(config)
-    benchmark_config = ToyBenchmarkConfig.from_dict(config["benchmark"])
+    benchmark_data = dict(config["benchmark"])
+    benchmark_type = str(benchmark_data.get("type", "toy_multifidelity"))
+    if benchmark_type == "toy_multifidelity":
+        benchmark_data.pop("type", None)
+        toy_config = ToyBenchmarkConfig.from_dict(benchmark_data)
+        tree_config = None
+    elif benchmark_type == "phase3_shallow_tree":
+        toy_config = None
+        tree_config = ShallowTreeConfig.from_dict(benchmark_data)
+    else:
+        raise ValueError(f"unknown benchmark type: {benchmark_type}")
     budget = SearchBudget(**config["budget"])
     planner_settings = config.get("planner_settings", {})
     repetitions = int(config["run"]["repetitions"])
@@ -74,18 +90,31 @@ def run_experiment(
     records: list[dict[str, Any]] = []
     for offset in range(repetitions):
         task_seed = base_seed + offset
-        task = sample_task(benchmark_config, task_seed)
+        task: State
+        if toy_config is not None:
+            task = sample_task(toy_config, task_seed)
+        elif tree_config is not None:
+            task = sample_shallow_tree(tree_config, task_seed)
+        else:  # pragma: no cover - guarded by benchmark validation above
+            raise AssertionError("benchmark configuration was not resolved")
         for method in config["methods"]:
             settings = dict(planner_settings.get(method, {}))
-            planner = _planner(method, settings)
+            if toy_config is not None:
+                planner = _planner(method, settings)
+                portfolio = make_portfolio(toy_config)
+            else:
+                if tree_config is None:  # pragma: no cover - type narrowing
+                    raise AssertionError("missing shallow-tree configuration")
+                planner = make_shallow_tree_planner(method, tree_config, settings)
+                portfolio = make_shallow_tree_portfolio(tree_config)
             result = planner.plan(
                 task,
-                models=make_portfolio(benchmark_config),
+                models=portfolio,
                 budget=budget,
                 seed=_method_seed(task_seed, method),
             )
             true_value = task.true_value(result.action)
-            optimal_value = max(task.values)
+            optimal_value = task.true_value(task.optimal_action)
             record = {
                 "schema_version": 1,
                 "method": method,
@@ -102,6 +131,8 @@ def run_experiment(
                 "accurate_calls": result.usage.accurate_calls,
                 "iterations": result.usage.iterations,
                 "latency_s": result.usage.latency_s,
+                "model_calls": result.usage.model_calls,
+                "environment_calls": result.usage.environment_calls,
                 "risk": 0.0,
                 "trace": list(result.trace),
             }
@@ -113,12 +144,12 @@ def run_experiment(
 
     summary: dict[str, Any] = {
         "schema_version": 1,
-        "benchmark": "toy_multifidelity",
+        "benchmark": benchmark_type,
         "repetitions": repetitions,
         "budget": asdict(budget),
         "methods": methods,
         "notice": (
-            "Controlled interface diagnostic only; not empirical evidence for "
+            "Controlled engineering diagnostic only; not empirical evidence for "
             "the FidelityMCTS research claims."
         ),
     }
@@ -128,7 +159,7 @@ def run_experiment(
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Run the MonteCarloGym multi-fidelity toy benchmark."
+        description="Run a MonteCarloGym controlled diagnostic benchmark."
     )
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)

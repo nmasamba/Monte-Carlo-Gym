@@ -9,14 +9,16 @@ from .config import MCTSConfig
 from .core.backup import BackupOperator, MeanBackup
 from .core.expansion import LegalActionExpander
 from .core.mcts import (
+    Evaluator,
+    Expander,
     MCTSEngine,
     MCTSSearchReport,
     MCTSSearchResult,
     NullTraceSink,
+    SimulationModel,
     TraceSink,
 )
 from .core.tree import DefaultStateCodec, SearchTree, StateCodec
-from .gym_wrapper import MCTSEnvWrapper
 from .policies.action_selection import (
     MostVisitedActionSelector,
     RootActionSelector,
@@ -40,8 +42,8 @@ class MCTSAgent:
         budget: SearchBudget,
         seed: int = 0,
         tree_policy: TreePolicy | None = None,
-        expander: LegalActionExpander | None = None,
-        evaluator: RandomRolloutEvaluator | None = None,
+        expander: Expander | None = None,
+        evaluator: Evaluator | None = None,
         backup: BackupOperator | None = None,
         action_selector: RootActionSelector | None = None,
         state_codec: StateCodec | None = None,
@@ -86,12 +88,12 @@ class MCTSAgent:
 
     def compute_action(
         self,
-        sim_env: MCTSEnvWrapper,
+        sim_env: SimulationModel,
         observation: Any,
         *,
         budget: SearchBudget | None = None,
     ) -> Action:
-        """Search without advancing or corrupting ``sim_env.env``."""
+        """Search without advancing or corrupting the live simulation model."""
 
         key = self.state_codec.key(observation)
         if (

@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from random import Random
 from typing import Any
 
+from ..adaptive.budget import AdaptiveResourceLedger
 from ..models import ModelPortfolio
 from ..planner import PlanResult
 from ..types import (
@@ -165,12 +166,7 @@ def make_portfolio(config: ToyBenchmarkConfig) -> ModelPortfolio:
 
 class _Ledger:
     def __init__(self, budget: SearchBudget) -> None:
-        self.budget = budget
-        self.cost = 0.0
-        self.tokens = 0
-        self.accurate_calls = 0
-        self.iterations = 0
-        self.latency_s = 0.0
+        self._ledger = AdaptiveResourceLedger(budget)
 
     def query(
         self,
@@ -180,42 +176,25 @@ class _Ledger:
         rng: Random,
     ) -> ModelObservation | None:
         quote = model.quote(token_budget=0, rollout_depth=1)
-        if self.iterations + 1 > self.budget.max_iterations:
+        reservation = self._ledger.reserve(quote)
+        if reservation is None:
             return None
-        if self.cost + quote.cost > self.budget.max_cost:
-            return None
-        if self.tokens + quote.tokens > self.budget.max_tokens:
-            return None
-        if (
-            self.accurate_calls + quote.accurate_calls
-            > self.budget.max_accurate_calls
-        ):
-            return None
-
-        observation = model.evaluate(
-            task,
-            action,
-            token_budget=0,
-            rollout_depth=1,
-            rng=rng,
-        )
-        if observation.cost > quote.cost or observation.tokens > quote.tokens:
-            raise RuntimeError("model exceeded its conservative resource quote")
-        self.cost += observation.cost
-        self.tokens += observation.tokens
-        self.accurate_calls += quote.accurate_calls
-        self.iterations += 1
-        self.latency_s += observation.latency_s
+        try:
+            observation = model.evaluate(
+                task,
+                action,
+                token_budget=0,
+                rollout_depth=1,
+                rng=rng,
+            )
+        except Exception:
+            self._ledger.fail(reservation)
+            raise
+        self._ledger.commit(reservation, observation)
         return observation
 
     def usage(self) -> ResourceUsage:
-        return ResourceUsage(
-            cost=self.cost,
-            tokens=self.tokens,
-            accurate_calls=self.accurate_calls,
-            iterations=self.iterations,
-            latency_s=self.latency_s,
-        )
+        return self._ledger.usage()
 
 
 def _models(portfolio: ModelPortfolio) -> tuple[ToyModel, ToyModel]:
@@ -256,7 +235,7 @@ class CheapOnlyPlanner:
         cheap, _ = _models(models)
         rng = Random(seed)
         ledger = _Ledger(budget)
-        estimates: dict[Action, float] = {}
+        estimates: dict[str, float] = {}
         trace: list[dict[str, Any]] = []
         for action in state.actions:
             observation = ledger.query(cheap, state, action, rng)
@@ -285,7 +264,7 @@ class HighFidelityOnlyPlanner:
         _, accurate = _models(models)
         rng = Random(seed)
         ledger = _Ledger(budget)
-        estimates: dict[Action, float] = {}
+        estimates: dict[str, float] = {}
         trace: list[dict[str, Any]] = []
         for action in state.actions:
             observation = ledger.query(accurate, state, action, rng)
@@ -317,7 +296,7 @@ class FixedCascadePlanner:
         cheap, accurate = _models(models)
         rng = Random(seed)
         ledger = _Ledger(budget)
-        estimates: dict[Action, float] = {}
+        estimates: dict[str, float] = {}
         trace: list[dict[str, Any]] = []
 
         for action in state.actions:
@@ -359,7 +338,7 @@ class AdaptiveFidelityPlanner:
         cheap, accurate = _models(models)
         rng = Random(seed)
         ledger = _Ledger(budget)
-        evidence: dict[Action, ModelObservation] = {}
+        evidence: dict[str, ModelObservation] = {}
         trace: list[dict[str, Any]] = []
 
         for action in state.actions:

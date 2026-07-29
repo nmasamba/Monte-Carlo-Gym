@@ -922,9 +922,13 @@ montecarlgym/
     references.bib
 ```
 
-The repository now implements the Phase 1 classical UCT vertical slice and the
-adaptive protocols/controlled toy harness. Later classical presets and learned
-adaptive-compute integrations remain implementation milestones.
+The repository now implements the Phase 1 UCT vertical slice, Phase 2 classical
+compatibility presets, and the Phase 3 multi-fidelity vertical slice. Phase 3
+includes strict multi-resource reservations, branch-local compute evidence,
+fixed routing/stopping policies, typed provenance, verified replay pairs,
+online discrepancy estimates, and a dependency-free learned-value/executable-
+rollout diagnostic. Learned routing and external benchmark integrations remain
+milestones.
 
 ## 16. Configuration and dependency injection
 
@@ -1046,15 +1050,30 @@ sufficient for reproducibility and safer operations.
 
 ### Phase 3: multi-fidelity research layer
 
-- Add model portfolio, fixed routers, discrepancy model, stop policies.
-- Integrate one learned cheap model and one executable benchmark.
-- Add token/model routing and complete cost accounting.
+- Implemented: model portfolio, fixed routers, discrepancy model, stop policies.
+- Implemented: one fitted cheap model and one isolated executable benchmark.
+- Implemented: token/depth/model routing and hard cost, token, accurate-call,
+  model-call, environment-call, iteration, and cooperative deadline accounting.
 
 ### Phase 4: learned routing and verified self-improvement
 
-- Train EVC or contextual-bandit routers.
-- Add calibrated uncertainty and verified replay.
-- Add off-policy evaluation, randomized audit traffic, and ablations.
+- Implemented: train a contextual linear EVC proxy from persisted verified
+  replay and use it for cost-aware branch escalation and learned stopping.
+- Implemented: model-pair contextual discrepancy correction with held-out
+  empirical intervals and calibration diagnostics.
+- Implemented: append-only validated replay, exact route propensities,
+  randomized audit traffic, IPS/self-normalized IPS/doubly robust estimators,
+  a random-escalation baseline, and executable ablations.
+- Implemented: invoke adaptive planning at classical MCTS frontiers while
+  atomically absorbing nested usage into the outer hard budget.
+- Implemented: an L1 FrozenLake exploratory harness plus immutable protocol
+  fingerprints, artifact hashes, source-revision checks, and untouched-output
+  guards.
+
+This is infrastructure readiness, not completion of the empirical paper. The
+current EVC label is absolute verified discrepancy, not a directly randomized
+causal value-of-compute target. Learned stopping beyond that net-EVC rule and
+L2/L3 benchmark adapters remain future work.
 
 ### Phase 5: scale and ecosystem
 

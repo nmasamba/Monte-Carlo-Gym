@@ -7,20 +7,24 @@ standard ``step`` five-tuple and an enumerable legal-action surface.
 from __future__ import annotations
 
 import copy
+import operator
 import random
 import sys
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Iterator, Protocol
+from typing import Any, Protocol, SupportsIndex, cast
 
 from ..types import Action
 from .snapshot import SnapshotError
 
 
 class SnapshotStrategy(Protocol):
-    isolates_live: bool
-    name: str
+    @property
+    def isolates_live(self) -> bool: ...
+
+    @property
+    def name(self) -> str: ...
 
     def validate(self, env: Any) -> None: ...
 
@@ -44,7 +48,7 @@ class EnvSnapshot:
 
     strategy_name: str
     environment_state: Any
-    python_random_state: object
+    python_random_state: tuple[Any, ...]
     numpy_random_state: object | None
     rng_records: tuple[_RNGRecord, ...]
     terminated: bool
@@ -149,7 +153,7 @@ def _numpy_global_state() -> object | None:
     if numpy is None:
         return None
     try:
-        return copy.deepcopy(numpy.random.get_state())
+        return cast(object, copy.deepcopy(numpy.random.get_state()))
     except AttributeError:
         return None
 
@@ -179,13 +183,16 @@ class MCTSEnvWrapper:
             raise ValueError("call costs must be non-negative")
         if default_call_cost > max_call_cost:
             raise ValueError("default_call_cost cannot exceed max_call_cost")
+        resolved_strategy: SnapshotStrategy
         if strategy is None:
             from .deepcopy import DeepCopySnapshotStrategy
 
-            strategy = DeepCopySnapshotStrategy()
-        strategy.validate(env)
+            resolved_strategy = DeepCopySnapshotStrategy()
+        else:
+            resolved_strategy = strategy
+        resolved_strategy.validate(env)
         self.env = env
-        self.strategy = strategy
+        self.strategy = resolved_strategy
         self._active_env = env
         self._legal_actions_fn = legal_actions
         self.max_call_cost = float(max_call_cost)
@@ -299,6 +306,7 @@ class MCTSEnvWrapper:
 
     def legal_actions(self, observation: Any | None = None) -> tuple[Action, ...]:
         env = self._active_env
+        actions: Sequence[Action] | None
         if self._legal_actions_fn is not None:
             actions = self._legal_actions_fn(env, observation)
         else:
@@ -307,15 +315,27 @@ class MCTSEnvWrapper:
                 actions = provider()
             else:
                 available = getattr(env, "available_actions", None)
-                actions = available() if callable(available) else available
+                actions = cast(
+                    Sequence[Action] | None,
+                    available() if callable(available) else available,
+                )
                 if actions is None:
                     space = getattr(env, "action_space", None)
-                    count = getattr(space, "n", None)
-                    if not isinstance(count, int):
+                    raw_count = getattr(space, "n", None)
+                    raw_start = getattr(space, "start", 0)
+                    try:
+                        count = operator.index(cast(SupportsIndex, raw_count))
+                        start = operator.index(cast(SupportsIndex, raw_start))
+                    except TypeError:
                         raise SnapshotError(
                             "cannot enumerate legal actions; provide legal_actions="
+                        ) from None
+                    if isinstance(raw_count, bool) or count < 0:
+                        raise SnapshotError(
+                            "discrete action-space size must be a non-negative "
+                            "integer"
                         )
-                    actions = range(count)
+                    actions = range(start, start + count)
         return tuple(actions)
 
     def transition_cost(self, info: Mapping[str, Any]) -> float:

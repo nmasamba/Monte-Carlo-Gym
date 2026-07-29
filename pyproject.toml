@@ -1,14 +1,15 @@
 [build-system]
-requires = ["setuptools>=69"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "montecarlgym"
-version = "0.1.0a0"
+version = "0.2.0a2"
 description = "Gymnasium-compatible MCTS and adaptive multi-fidelity planning"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{name = "MonteCarloGym Contributors"}]
 keywords = [
   "mcts",
@@ -20,7 +21,6 @@ keywords = [
 ]
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
-  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -32,15 +32,16 @@ dependencies = []
 [project.optional-dependencies]
 gym = ["gymnasium>=1.0"]
 dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11"]
+release = ["build>=1.2", "twine>=5.1"]
 research = ["numpy>=1.26", "pandas>=2.2", "scipy>=1.13"]
 
 [project.scripts]
 mcg-experiment = "montecarlgym.experiments.runner:main"
 
 [project.urls]
-Documentation = "https://github.com/montecarlgym/montecarlgym"
-Repository = "https://github.com/montecarlgym/montecarlgym"
-Issues = "https://github.com/montecarlgym/montecarlgym/issues"
+Documentation = "https://github.com/nmasamba/Monte-Carlo-Gym/tree/main/docs"
+Repository = "https://github.com/nmasamba/Monte-Carlo-Gym"
+Issues = "https://github.com/nmasamba/Monte-Carlo-Gym/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -55,6 +56,10 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.mypy]
 python_version = "3.10"
 strict = true
+
+[[tool.mypy.overrides]]
+module = ["gymnasium", "gymnasium.*", "numpy", "numpy.*"]
+follow_imports = "skip"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

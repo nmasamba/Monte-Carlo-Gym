@@ -66,6 +66,20 @@
             "null"
           ],
           "minimum": 0
+        },
+        "max_model_calls": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "max_environment_calls": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
         }
       }
     },

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from random import Random
 from statistics import fmean
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
 
 
 def aggregate_episode_records(
@@ -38,6 +39,16 @@ def aggregate_episode_records(
             ),
             "mean_accurate_calls": fmean(
                 float(record["accurate_calls"]) for record in method_records
+            ),
+            "mean_model_calls": fmean(
+                float(record["model_calls"]) for record in method_records
+            ),
+            "mean_environment_calls": fmean(
+                float(record["environment_calls"])
+                for record in method_records
+            ),
+            "mean_latency_s": fmean(
+                float(record["latency_s"]) for record in method_records
             ),
         }
     return result
@@ -105,7 +116,9 @@ def paired_bootstrap_difference(
     if not 0.0 < confidence < 1.0:
         raise ValueError("confidence must be between zero and one")
 
-    differences = [left - right for left, right in zip(first, second)]
+    differences = [
+        left - right for left, right in zip(first, second, strict=True)
+    ]
     rng = Random(seed)
     bootstrapped = sorted(
         fmean(differences[rng.randrange(len(differences))] for _ in differences)

@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Hashable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 from ..types import Action
 
@@ -40,7 +40,7 @@ def _freeze(value: Any) -> Hashable:
             "state is not hashable; inject a StateCodec that defines its "
             "information-state identity"
         ) from exc
-    return value
+    return cast(Hashable, value)
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,6 +62,9 @@ class StateNode:
     visits: int = 0
     edges: dict[Action, ActionEdge] = field(default_factory=dict)
     expanded: bool = False
+    value_estimate: float | None = None
+    policy_version: str | None = None
+    statistics: dict[str, Any] = field(default_factory=dict)
 
     @property
     def terminal(self) -> bool:
@@ -91,6 +94,10 @@ class ActionEdge:
     prior: float | None = None
     evidence: list[Any] = field(default_factory=list)
     outcomes: dict[Hashable, OutcomeLink] = field(default_factory=dict)
+    amaf_visits: int = 0
+    amaf_total_return: float = 0.0
+    amaf_mean_value: float = 0.0
+    statistics: dict[str, Any] = field(default_factory=dict)
 
     @property
     def N(self) -> int:
@@ -108,6 +115,11 @@ class ActionEdge:
         self.visits += 1
         self.total_return += value
         self.mean_value = self.total_return / self.visits
+
+    def update_amaf(self, value: float) -> None:
+        self.amaf_visits += 1
+        self.amaf_total_return += value
+        self.amaf_mean_value = self.amaf_total_return / self.amaf_visits
 
 
 class SearchTree:

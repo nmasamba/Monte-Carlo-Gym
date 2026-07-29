@@ -9,6 +9,7 @@ from fixture_envs import (
     TerminationModeEnv,
     UnsafeCopyEnv,
 )
+
 from montecarlgym import MCTSEnvWrapper, NativeSnapshotStrategy, SnapshotError
 from montecarlgym.agent import MCTSAgent
 from montecarlgym.types import SearchBudget
@@ -27,6 +28,24 @@ def budget(**overrides: object) -> SearchBudget:
 
 
 class GymWrapperTests(unittest.TestCase):
+    def test_integer_like_discrete_space_and_nonzero_start_are_supported(
+        self,
+    ) -> None:
+        class IntegerLike:
+            def __init__(self, value: int) -> None:
+                self.value = value
+
+            def __index__(self) -> int:
+                return self.value
+
+        env = StatefulRandomEnv()
+        env.action_space.n = IntegerLike(2)
+        env.action_space.start = IntegerLike(3)
+
+        actions = MCTSEnvWrapper(env).legal_actions()
+
+        self.assertEqual(actions, (3, 4))
+
     def test_snapshot_restore_reproduces_state_and_rng(self) -> None:
         env = StatefulRandomEnv()
         env.reset(seed=17)

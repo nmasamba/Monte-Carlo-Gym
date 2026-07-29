@@ -1,0 +1,51 @@
+name: Publish Python distribution
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Build and publish to PyPI
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify release tag matches package version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python - <<'PY'
+          import os
+          import tomllib
+
+          with open("pyproject.toml", "rb") as project_file:
+              version = tomllib.load(project_file)["project"]["version"]
+          expected = f"v{version}"
+          actual = os.environ["RELEASE_TAG"]
+          if actual != expected:
+              raise SystemExit(f"release tag {actual!r} must equal {expected!r}")
+          PY
+      - name: Validate source and build distributions
+        run: |
+          python -m pip install --upgrade pip '.[gym,dev,release]'
+          python -m unittest discover -s tests -v
+          ruff check src tests experiments examples
+          mypy src
+          python -m compileall -q src tests experiments examples
+          python examples/classical_mcts.py
+          python examples/phase2_puct.py
+          python examples/phase3_multifidelity.py
+          python examples/phase4_learned_routing.py
+          python -m build
+          python -m twine check dist/*
+      - name: Publish distributions
+        uses: pypa/gh-action-pypi-publish@release/v1

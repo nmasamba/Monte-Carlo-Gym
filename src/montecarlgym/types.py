@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import math
+from collections.abc import Hashable, Mapping
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Hashable, Mapping
+from typing import Any
 
 # Observations are not necessarily hashable.  Classical search uses an injected
 # StateCodec to turn them into stable keys; the adaptive interfaces intentionally
@@ -19,6 +21,21 @@ class Fidelity(str, Enum):
     CHEAP = "cheap"
     INTERMEDIATE = "intermediate"
     ACCURATE = "accurate"
+
+
+class EvidenceProvenance(str, Enum):
+    """Origin of model evidence, kept distinct in traces and replay.
+
+    ``VERIFIED`` is intentionally not a provenance value. Verification is an
+    independent property of evidence: an executable simulator may be verified
+    for a controlled benchmark while a real observation may still be pending
+    an external check.
+    """
+
+    SYNTHETIC = "synthetic"
+    LEARNED = "learned"
+    EXECUTABLE = "executable"
+    REAL = "real"
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,6 +83,25 @@ class ComputeAction:
     token_budget: int = 0
     rollout_depth: int = 1
     request_verification: bool = False
+    route_propensity: float | None = None
+    audit: bool = False
+    expected_value_of_compute: float | None = None
+
+    def __post_init__(self) -> None:
+        if not self.state_id:
+            raise ValueError("state_id cannot be empty")
+        if not self.model_id:
+            raise ValueError("model_id cannot be empty")
+        if self.token_budget < 0:
+            raise ValueError("token_budget must be non-negative")
+        if self.rollout_depth < 1:
+            raise ValueError("rollout_depth must be positive")
+        propensity = self.route_propensity
+        if propensity is not None and not 0.0 < propensity <= 1.0:
+            raise ValueError("route_propensity must be in (0, 1]")
+        evc = self.expected_value_of_compute
+        if evc is not None and not math.isfinite(evc):
+            raise ValueError("expected_value_of_compute must be finite")
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,6 +112,7 @@ class ModelQuote:
     tokens: int = 0
     accurate_calls: int = 0
     expected_latency_s: float = 0.0
+    environment_calls: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,6 +128,9 @@ class ModelObservation:
     next_state: State | None = None
     terminated: bool = False
     truncated: bool = False
+    environment_calls: int = 0
+    provenance: EvidenceProvenance = EvidenceProvenance.SYNTHETIC
+    verified: bool = False
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
 

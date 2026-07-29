@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "benchmark": {
+    "type": "phase3_shallow_tree",
+    "actions": 5,
+    "horizon": 3,
+    "learned_cost": 0.25,
+    "executable_step_cost": 2.0,
+    "learned_tokens": 8,
+    "learned_variance": 0.09
+  },
+  "run": {
+    "repetitions": 40,
+    "base_seed": 73
+  },
+  "budget": {
+    "max_cost": 19.25,
+    "max_tokens": 40,
+    "max_accurate_calls": 3,
+    "max_iterations": 8,
+    "max_model_calls": 8,
+    "max_environment_calls": 9
+  },
+  "methods": [
+    "phase3_learned_only",
+    "phase3_executable_only",
+    "phase3_fixed_cascade",
+    "phase3_threshold"
+  ],
+  "planner_settings": {
+    "phase3_fixed_cascade": {
+      "top_k": 2
+    },
+    "phase3_threshold": {
+      "z_score": 1.64
+    }
+  }
+}

@@ -15,7 +15,6 @@ from montecarlgym.experiments.toy import (
 )
 from montecarlgym.types import SearchBudget
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 

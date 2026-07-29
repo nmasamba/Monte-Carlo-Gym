@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package and development extras
+        run: python -m pip install --upgrade pip '.[gym,dev,release]'
+      - name: Unit and integration tests
+        run: python -m unittest discover -s tests -v
+      - name: Static checks
+        run: |
+          ruff check src tests experiments examples
+          mypy src
+          python -m compileall -q src tests experiments examples
+      - name: Runnable examples
+        run: |
+          python examples/classical_mcts.py
+          python examples/phase2_puct.py
+          python examples/phase3_multifidelity.py
+          python examples/phase4_learned_routing.py
+      - name: Distribution metadata
+        run: |
+          python -m build
+          python -m twine check dist/*

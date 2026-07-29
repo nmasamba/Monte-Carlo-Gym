@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from random import Random
-from typing import Any, Mapping, Protocol
+from typing import Any, Protocol
 
 from ..core.path import Evaluation
 from ..core.tree import StateNode
 from ..types import Action
-
 
 TransitionTuple = tuple[Any, float, bool, bool, Mapping[str, Any]]
 
@@ -74,12 +73,19 @@ class RandomRolloutEvaluator:
         value = 0.0
         factor = 1.0
         observation = frontier.state
+        rollout_actions: list[Action] = []
         for depth in range(self.max_depth):
             actions = model.legal_actions(observation)
             action = self.policy.choose_action(actions, rng)
+            rollout_actions.append(action)
             transition = model.try_step(action)
             if transition is None:
-                return Evaluation(value, depth, stop_reason="resource_budget")
+                return Evaluation(
+                    value,
+                    depth,
+                    stop_reason="resource_budget",
+                    rollout_actions=tuple(rollout_actions[:-1]),
+                )
             observation, reward, terminated, truncated, _ = transition
             value += factor * reward
             factor *= self.discount
@@ -90,5 +96,11 @@ class RandomRolloutEvaluator:
                     terminated=terminated,
                     truncated=truncated,
                     stop_reason="terminal" if terminated else "truncated",
+                    rollout_actions=tuple(rollout_actions),
                 )
-        return Evaluation(value, self.max_depth, stop_reason="rollout_depth")
+        return Evaluation(
+            value,
+            self.max_depth,
+            stop_reason="rollout_depth",
+            rollout_actions=tuple(rollout_actions),
+        )

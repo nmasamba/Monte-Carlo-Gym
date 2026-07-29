@@ -2,11 +2,15 @@
 
 from .backup import (
     AlternatingValuePerspective,
+    ConstantMixWeight,
     IdentityValuePerspective,
     MeanBackup,
+    MixBackup,
+    RobustBackup,
+    VisitMixWeight,
 )
 from .budget import BudgetExhausted, ResourceLedger, ResourceQuoteExceeded
-from .expansion import LegalActionExpander
+from .expansion import LegalActionExpander, expand_legal_edges
 from .mcts import (
     Evaluator,
     Expander,
@@ -32,9 +36,11 @@ __all__ = [
     "ActionEdge",
     "AlternatingValuePerspective",
     "BudgetExhausted",
+    "ConstantMixWeight",
     "DefaultStateCodec",
     "Evaluator",
     "Evaluation",
+    "expand_legal_edges",
     "Expander",
     "IdentityValuePerspective",
     "LegalActionExpander",
@@ -43,15 +49,18 @@ __all__ = [
     "MCTSSearchReport",
     "MCTSSearchResult",
     "MeanBackup",
+    "MixBackup",
     "NullTraceSink",
     "OutcomeLink",
     "PathStep",
     "ResourceLedger",
     "ResourceQuoteExceeded",
+    "RobustBackup",
     "SearchPath",
     "SearchTree",
     "SimulationModel",
     "StateCodec",
     "StateNode",
+    "VisitMixWeight",
     "IterationTrace",
 ]

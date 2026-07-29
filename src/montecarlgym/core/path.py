@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from ..types import Action, ResourceUsage
 from .tree import ActionEdge, OutcomeLink, StateNode
 
 
@@ -51,3 +52,5 @@ class Evaluation:
     terminated: bool = False
     truncated: bool = False
     stop_reason: str = "evaluated"
+    rollout_actions: tuple[Action, ...] = ()
+    usage: ResourceUsage = ResourceUsage()

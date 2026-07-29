@@ -45,18 +45,6 @@ class ResourceLedger:
         deadline = self.budget.deadline_s
         return deadline is not None and self.elapsed_s >= deadline
 
-    @property
-    def call_limit(self) -> int | None:
-        limits = [
-            limit
-            for limit in (
-                self.budget.max_model_calls,
-                self.budget.max_environment_calls,
-            )
-            if limit is not None
-        ]
-        return min(limits) if limits else None
-
     def can_start_iteration(self) -> bool:
         if self.iterations >= self.budget.max_iterations:
             self.stop_reason = "iteration_budget"
@@ -71,9 +59,17 @@ class ResourceLedger:
         if self.deadline_reached:
             self.stop_reason = "deadline"
             return False
-        limit = self.call_limit
-        if limit is not None and self.model_calls >= limit:
-            self.stop_reason = "call_budget"
+        if (
+            self.budget.max_model_calls is not None
+            and self.model_calls >= self.budget.max_model_calls
+        ):
+            self.stop_reason = "model_call_budget"
+            return False
+        if (
+            self.budget.max_environment_calls is not None
+            and self.environment_calls >= self.budget.max_environment_calls
+        ):
+            self.stop_reason = "environment_call_budget"
             return False
         if self.cost + quoted_cost > self.budget.max_cost:
             self.stop_reason = "cost_budget"
@@ -113,6 +109,87 @@ class ResourceLedger:
             raise BudgetExhausted("iteration budget exhausted")
         self.iterations += 1
 
+    def remaining_budget(self) -> SearchBudget:
+        """Return the resources available to a nested budget-aware evaluator."""
+
+        model_calls = self.budget.max_model_calls
+        environment_calls = self.budget.max_environment_calls
+        deadline = self.budget.deadline_s
+        return SearchBudget(
+            max_cost=max(0.0, self.budget.max_cost - self.cost),
+            max_tokens=max(0, self.budget.max_tokens - self.tokens),
+            max_accurate_calls=max(
+                0, self.budget.max_accurate_calls - self.accurate_calls
+            ),
+            max_iterations=max(
+                0, self.budget.max_iterations - self.iterations
+            ),
+            deadline_s=(
+                None
+                if deadline is None
+                else max(0.0, deadline - self.elapsed_s)
+            ),
+            max_model_calls=(
+                None
+                if model_calls is None
+                else max(0, model_calls - self.model_calls)
+            ),
+            max_environment_calls=(
+                None
+                if environment_calls is None
+                else max(0, environment_calls - self.environment_calls)
+            ),
+        )
+
+    def absorb_usage(self, usage: ResourceUsage) -> None:
+        """Commit already-budgeted nested evaluator use without double counting.
+
+        A nested evaluator must first derive its hard envelope from
+        ``remaining_budget``. This method verifies that contract again before
+        adding model, token, accurate-call, environment-call, and cost usage.
+        Nested evaluation iterations do not consume outer MCTS iterations.
+        """
+
+        self._validate_usage(usage)
+        if self.deadline_reached:
+            self.stop_reason = "deadline"
+            raise BudgetExhausted("nested evaluator completed after the deadline")
+        if self.cost + usage.cost > self.budget.max_cost:
+            self.stop_reason = "cost_budget"
+            raise BudgetExhausted("nested evaluator exceeded the cost budget")
+        if self.tokens + usage.tokens > self.budget.max_tokens:
+            self.stop_reason = "token_budget"
+            raise BudgetExhausted("nested evaluator exceeded the token budget")
+        if (
+            self.accurate_calls + usage.accurate_calls
+            > self.budget.max_accurate_calls
+        ):
+            self.stop_reason = "accurate_call_budget"
+            raise BudgetExhausted(
+                "nested evaluator exceeded the accurate-call budget"
+            )
+        if (
+            self.budget.max_model_calls is not None
+            and self.model_calls + usage.model_calls
+            > self.budget.max_model_calls
+        ):
+            self.stop_reason = "model_call_budget"
+            raise BudgetExhausted("nested evaluator exceeded the model-call budget")
+        if (
+            self.budget.max_environment_calls is not None
+            and self.environment_calls + usage.environment_calls
+            > self.budget.max_environment_calls
+        ):
+            self.stop_reason = "environment_call_budget"
+            raise BudgetExhausted(
+                "nested evaluator exceeded the environment-call budget"
+            )
+        self.cost += usage.cost
+        self.tokens += usage.tokens
+        self.accurate_calls += usage.accurate_calls
+        self.model_calls += usage.model_calls
+        self.environment_calls += usage.environment_calls
+
     def usage(self) -> ResourceUsage:
         return ResourceUsage(
             cost=self.cost,
@@ -130,3 +207,15 @@ class ResourceLedger:
             raise ValueError(
                 "normalized model-call cost must be finite and non-negative"
             )
+
+    @classmethod
+    def _validate_usage(cls, usage: ResourceUsage) -> None:
+        cls._validate_cost(usage.cost)
+        for name, value in (
+            ("tokens", usage.tokens),
+            ("accurate_calls", usage.accurate_calls),
+            ("model_calls", usage.model_calls),
+            ("environment_calls", usage.environment_calls),
+        ):
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise ValueError(f"nested usage {name} must be non-negative")

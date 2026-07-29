@@ -1,0 +1,86 @@
+{
+  "protocol_version": 1,
+  "study_id": "fidelitymcts-frozenlake-smoke",
+  "stage": "exploratory",
+  "hypotheses": [
+    "Engineering smoke: all selected methods complete under hard budgets"
+  ],
+  "primary_endpoints": ["episode_success_rate", "normalized_cost"],
+  "secondary_endpoints": ["accurate_calls", "model_calls"],
+  "benchmark": {
+    "type": "gymnasium_frozenlake",
+    "env_id": "FrozenLake-v1",
+    "map_name": "4x4",
+    "is_slippery": false,
+    "maximum_episode_steps": 8,
+    "clone_step_cost": 0.25,
+    "version": "Gymnasium FrozenLake-v1 / 4x4 deterministic"
+  },
+  "training": {
+    "algorithm": "tabular_q_learning",
+    "episodes": 50,
+    "seed": 1801,
+    "router_training_seed": 2801,
+    "router_calibration_states": [2, 7, 10, 14],
+    "alpha": 0.2,
+    "discount": 0.99,
+    "epsilon_start": 1.0,
+    "epsilon_end": 0.05,
+    "maximum_steps": 8,
+    "inference_cost": 0.05,
+    "router_ridge": 1.0,
+    "discrepancy_ridge": 1.0,
+    "calibration_coverage": 0.9,
+    "split_policy": "offline training and calibration precede evaluation"
+  },
+  "methods": ["direct_learned", "frontier_evc"],
+  "ablations": ["frontier_evc_without_audit_traffic"],
+  "method_settings": {
+    "frontier_evc": {
+      "tree_depth": 4,
+      "accurate_cost": 2.0,
+      "cost_weight": 0.02,
+      "minimum_net_evc": 0.0,
+      "audit_probability": 0.1
+    }
+  },
+  "budget_grid": [
+    {
+      "max_cost": 6.0,
+      "max_tokens": 0,
+      "max_accurate_calls": 1,
+      "max_iterations": 3,
+      "max_model_calls": 16,
+      "max_environment_calls": 12
+    }
+  ],
+  "resource_accounting": {
+    "normalized_cost_definition": "native step=1; clone step=0.25; table=0.05",
+    "frontier_budget": {
+      "max_cost": 2.0,
+      "max_tokens": 0,
+      "max_accurate_calls": 1,
+      "max_iterations": 5,
+      "max_model_calls": 5,
+      "max_environment_calls": 8
+    }
+  },
+  "pilot_seeds": [701],
+  "confirmatory_seeds": [1701],
+  "analysis": {
+    "confidence_level": 0.95,
+    "interval_method": "paired_stratified_bootstrap_over_episode_seeds",
+    "bootstrap_samples": 100,
+    "multiple_comparison_correction": "not applicable to engineering smoke",
+    "stopping_rule": "run_all_declared_units",
+    "primary_summary": "completion and budget compliance"
+  },
+  "failure_policy": {
+    "abort_on_error": true,
+    "exclude_after_run": false,
+    "report_all_failures": true,
+    "retry_policy": "no automatic retries"
+  },
+  "exclusions": ["no result-dependent exclusions"],
+  "artifacts": {}
+}

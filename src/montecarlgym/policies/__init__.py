@@ -6,10 +6,11 @@ from .rollout_policies import (
     RandomRolloutPolicy,
     RolloutPolicy,
 )
-from .tree_policies import TreePolicy, UCTTreePolicy
+from .tree_policies import PUCTTreePolicy, TreePolicy, UCTTreePolicy
 
 __all__ = [
     "MostVisitedActionSelector",
+    "PUCTTreePolicy",
     "RandomRolloutEvaluator",
     "RandomRolloutPolicy",
     "RolloutPolicy",

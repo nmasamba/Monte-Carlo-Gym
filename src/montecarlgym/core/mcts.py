@@ -129,6 +129,12 @@ class _BudgetedModel:
         self.ledger.commit_call(reservation, measured_cost=measured_cost)
         return transition
 
+    def remaining_budget(self) -> SearchBudget:
+        return self.ledger.remaining_budget()
+
+    def absorb_usage(self, usage: ResourceUsage) -> None:
+        self.ledger.absorb_usage(usage)
+
 
 @dataclass(slots=True)
 class MCTSEngine:
@@ -161,6 +167,13 @@ class MCTSEngine:
             while ledger.can_start_iteration():
                 model.restore(root_snapshot)
                 model.seed_simulation(rng.getrandbits(64))
+                start_iteration = getattr(
+                    self.tree_policy,
+                    "start_iteration",
+                    None,
+                )
+                if start_iteration is not None:
+                    start_iteration(tree.root, rng)
                 context = _BudgetedModel(model, ledger)
                 path, evaluation = self._run_iteration(tree, context, rng)
                 if path is None or evaluation is None:
@@ -246,6 +259,8 @@ class MCTSEngine:
                     stop_reason="terminal" if terminated else "truncated",
                 )
             if unvisited or new_outcome:
-                return path, self.evaluator.evaluate(node, model, rng)
+                evaluation = self.evaluator.evaluate(node, model, rng)
+                model.absorb_usage(evaluation.usage)
+                return path, evaluation
 
         return path, Evaluation(0.0, stop_reason="tree_depth")

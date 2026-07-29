@@ -439,3 +439,38 @@ Before submission, require:
 - compute and monetary accounting;
 - released configurations, harness, and representative traces;
 - no empirical statement based only on the included toy fixture.
+
+## 18. Operational preregistration boundary
+
+Preregistration means making the complete confirmatory design immutable and
+externally timestamped before inspecting any outcome from its held-out
+confirmatory seeds or tasks. It is stronger than committing a general plan:
+the hypotheses, endpoint families, task unit, benchmark and verifier versions,
+training/calibration/test split, artifact hashes, methods, ablations, budgets,
+sample size and seeds, randomization, exclusions, failure/retry policy,
+stopping rule, interval method, multiple-comparison correction, and Pareto or
+hypervolume reference points must be fixed.
+
+The repository enforces this workflow with separate locations:
+
+```text
+experiments/pilots/           mutable exploratory protocols
+experiments/protocols/        mutable confirmatory candidates
+experiments/preregistered/    immutable fingerprinted manifests
+output/pilots/                exploratory outcomes
+output/confirmatory/          untouched confirmatory outcomes
+```
+
+The FrozenLake L1 protocol is a pilot of the Phase 4 machinery. It is not by
+itself the complete paper protocol described in this document. Before a paper
+preregistration, add the missing L2/L3 benchmark integrations, all required
+matched-budget baselines, the final ablation matrix, power analysis, locked
+analysis code, and fixed statistical reference points. Then validate, freeze,
+and externally register the complete candidate as described in
+`experiments/README.md`.
+
+After registration, do not run ad-hoc checks on confirmatory seeds. The first
+access to those outcomes must be through the registered runner. Any amendment
+must be timestamped and justified before accessing the affected outcomes; it
+uses a new study identifier and never overwrites the original manifest or raw
+run directory.

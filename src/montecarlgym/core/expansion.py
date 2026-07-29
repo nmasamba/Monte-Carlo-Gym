@@ -9,6 +9,37 @@ from ..types import Action
 from .tree import ActionEdge, StateNode
 
 
+def expand_legal_edges(
+    node: StateNode,
+    legal_actions: Sequence[Action],
+) -> tuple[ActionEdge, ...]:
+    """Validate and attach a complete legal-action set."""
+
+    if node.terminal:
+        node.expanded = True
+        return ()
+    seen: set[Action] = set()
+    for action in legal_actions:
+        try:
+            duplicate = action in seen
+        except TypeError as exc:
+            raise TypeError("MCTS actions must be hashable") from exc
+        if duplicate:
+            raise ValueError(f"duplicate legal action: {action!r}")
+        seen.add(action)
+        node.edges.setdefault(action, ActionEdge(action))
+    stale = set(node.edges) - seen
+    if stale:
+        raise ValueError(
+            "state identity produced an incompatible legal-action set; "
+            f"stale actions: {sorted(stale, key=repr)!r}"
+        )
+    if not node.edges:
+        raise RuntimeError("non-terminal state exposes no legal actions")
+    node.expanded = True
+    return tuple(node.edges.values())
+
+
 @dataclass(frozen=True, slots=True)
 class LegalActionExpander:
     """Attach every currently legal action to a state node exactly once."""
@@ -18,26 +49,4 @@ class LegalActionExpander:
         node: StateNode,
         legal_actions: Sequence[Action],
     ) -> tuple[ActionEdge, ...]:
-        if node.terminal:
-            node.expanded = True
-            return ()
-        seen: set[Action] = set()
-        for action in legal_actions:
-            try:
-                duplicate = action in seen
-            except TypeError as exc:
-                raise TypeError("MCTS actions must be hashable") from exc
-            if duplicate:
-                raise ValueError(f"duplicate legal action: {action!r}")
-            seen.add(action)
-            node.edges.setdefault(action, ActionEdge(action))
-        stale = set(node.edges) - seen
-        if stale:
-            raise ValueError(
-                "state identity produced an incompatible legal-action set; "
-                f"stale actions: {sorted(stale, key=repr)!r}"
-            )
-        if not node.edges:
-            raise RuntimeError("non-terminal state exposes no legal actions")
-        node.expanded = True
-        return tuple(node.edges.values())
+        return expand_legal_edges(node, legal_actions)

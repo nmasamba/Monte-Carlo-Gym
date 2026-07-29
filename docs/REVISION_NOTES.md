@@ -50,3 +50,9 @@ The falsifiable paper claim is:
   not act on production systems.
 - The included toy harness validates interfaces and accounting only. It is not
   evidence for the paper's empirical hypothesis.
+- The Phase 3 shallow-tree harness integrates learned and executable evidence,
+  but remains a controlled engineering diagnostic rather than a paper result.
+- Phase 4 supplies persistent verified replay, contextual calibration, learned
+  EVC-proxy routing, randomized audit traffic, off-policy estimators, adaptive
+  MCTS-frontier evaluation, and guarded preregistration mechanics. Its real
+  FrozenLake integration is still an exploratory L1 pilot, not paper evidence.

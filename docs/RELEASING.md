@@ -28,6 +28,15 @@ python -m pip install --upgrade pip
 python -m pip install '.[gym,release]'
 
 python -m unittest discover -s tests -v
+ruff check src tests experiments examples
+mypy src
+python -m compileall -q src examples experiments
+PYTHONPATH=src python examples/classical_mcts.py
+PYTHONPATH=src python examples/phase5a_sqlite.py
+python experiments/run_sqlite.py \
+  --stage exploratory \
+  --config experiments/pilots/sqlite_l2_smoke.json \
+  --output /tmp/montecarlgym-sqlite-smoke
 python -m build
 python -m twine check dist/*
 ```

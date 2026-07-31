@@ -35,6 +35,9 @@ The repository contains:
   propensity-aware off-policy estimators, and budget-aware MCTS frontiers;
 - a real, optional-Gymnasium FrozenLake exploratory pilot plus fingerprinted
   preregistration and confirmatory-run guards;
+- an offline executable SQLite L2 query construction/repair benchmark with
+  immutable split fixtures, disposable verification, matched-budget baselines,
+  immutable raw records, and a complete exploratory analysis pipeline;
 - a deterministic learned-linear/executable-tree integration benchmark;
 - an experiment protocol suitable for a research implementation;
 - a runnable, dependency-free toy benchmark for multi-fidelity routing;
@@ -65,6 +68,10 @@ python experiments/run_gymnasium.py \
   --stage exploratory \
   --config experiments/pilots/frozenlake_smoke.json \
   --output output/pilots/frozenlake-smoke
+python experiments/run_sqlite.py \
+  --stage exploratory \
+  --config experiments/pilots/sqlite_l2_smoke.json \
+  --output output/pilots/sqlite-l2-smoke
 ```
 
 The command writes per-run JSONL records and an aggregate `summary.json`.
@@ -79,6 +86,8 @@ The command writes per-run JSONL records and an aggregate `summary.json`.
   original architecture and what was retained.
 - [`docs/RELEASING.md`](docs/RELEASING.md): TestPyPI and production release
   procedure.
+- [`docs/PHASE5A_SQLITE.md`](docs/PHASE5A_SQLITE.md): offline L2 benchmark,
+  raw artifacts, analysis, power diagnostics, and preregistration boundary.
 - [`paper/main.tex`](paper/main.tex): draft research paper.
 
 ## Status
@@ -112,11 +121,14 @@ methods and declared ablations on isolated native clones, while keeping pilot,
 candidate-protocol, frozen-registration, and confirmatory-output locations
 separate.
 
-The EVC target is currently absolute cheap-versus-verified discrepancy: a
-transparent utility proxy, not a causal estimate. BrowserGym, L2/L3 executable
-benchmarks, query/token-router baselines, learned stopping, distributed
-execution, and the complete paper-scale statistical analysis remain planned.
-No included pilot is a paper result.
+Phase 5A adds one deterministic, standard-library SQLite L2 benchmark and the
+first executable matched-budget/paired-analysis path. The EVC target remains
+absolute cheap-versus-verified discrepancy: a transparent utility proxy, not a
+causal estimate. The one-decision L2 slice does not establish sequential tree-
+reuse effects. BrowserGym/L3, remote model tiers, learned stopping beyond the
+proxy, distributed execution, broader held-out benchmark families, and the
+confirmatory study remain planned. No included pilot is a paper result, and no
+future-confirmatory SQLite task or seed is materialized.
 
 ## Installing from PyPI
 

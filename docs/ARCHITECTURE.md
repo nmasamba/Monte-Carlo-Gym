@@ -1077,6 +1077,13 @@ L2/L3 benchmark adapters remain future work.
 
 ### Phase 5: scale and ecosystem
 
+- Implemented as Phase 5A empirical readiness: one offline SQLite L2 vertical
+  slice with disposable executable verification, explicit evidence provenance,
+  matched-budget baselines, immutable raw artifacts, and the paired statistical
+  analysis needed to revise a confirmatory candidate.
+- Deliberately not implemented in Phase 5A: future-confirmatory SQLite tasks or
+  seeds, protocol freezing, external registration, remote foundation models,
+  BrowserGym/L3, or paper-result generation.
 - Planner service, batching, distributed traces, and adapter SDK.
 - PyPI release, OCI image, Hugging Face artifacts, and npm/agent plugin.
 - External benchmark reproductions and independent contributor tasks.

@@ -85,6 +85,10 @@ one deterministic fixture.
 - full traces and Pareto reports;
 - router baselines and ablations.
 
+Phase 5A satisfies the first local executable-pair and analysis-infrastructure
+portion of this gate with SQLite. It does not satisfy independent benchmark
+reproduction, sequential L2/L3 breadth, or confirmatory evidence.
+
 ### 0.3 service beta
 
 - containerized planner service;

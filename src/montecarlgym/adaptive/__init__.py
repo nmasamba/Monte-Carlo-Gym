@@ -35,7 +35,12 @@ from .planner import (
     NullAdaptiveTraceSink,
     VerificationError,
 )
-from .routing import LearnedEVCRouter, RandomEscalationRouter, router_features
+from .routing import (
+    LearnedEVCRouter,
+    MatchedRandomEscalationRouter,
+    RandomEscalationRouter,
+    router_features,
+)
 from .stopping import (
     ConfidenceStopPolicy,
     FixedQueryStopPolicy,
@@ -65,6 +70,7 @@ __all__ = [
     "FixedQueryStopPolicy",
     "ListAdaptiveTraceSink",
     "LearnedEVCRouter",
+    "MatchedRandomEscalationRouter",
     "LinearEVCModel",
     "ModelEvaluationError",
     "NeverStopPolicy",

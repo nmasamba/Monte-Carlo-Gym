@@ -474,3 +474,24 @@ access to those outcomes must be through the registered runner. Any amendment
 must be timestamped and justified before accessing the affected outcomes; it
 uses a new study identifier and never overwrites the original manifest or raw
 run directory.
+
+## 19. Phase 5A executable L2 readiness
+
+Phase 5A implements an offline SQLite query construction/repair benchmark. It
+uses immutable development, calibration, and exploratory fixtures; disposable
+in-memory execution; objective result-set verification; all ten local required
+baselines; six prescribed ablations; five hard-budget points; paired task IDs
+and seeds; immutable decision/episode/failure records; paired bootstrap,
+Pareto/hypervolume, calibration, OPE/overlap, randomized-online comparison, and
+exploratory power diagnostics.
+
+The current EVC learner still targets absolute verified discrepancy and remains
+an explicit proxy baseline. The benchmark has one task decision, so its
+tree-reuse ablation is correctly reported as structurally inapplicable. These
+limitations, the small materialized fixture set, and the absence of another L2
+family mean the draft protocol is not ready to freeze.
+
+The candidate under `experiments/protocols/` declares the future-confirmatory
+partition and seed policy without materializing either task IDs or seeds. It is
+a mutable, unregistered candidate. No Phase 5A command can run a confirmatory
+SQLite study.

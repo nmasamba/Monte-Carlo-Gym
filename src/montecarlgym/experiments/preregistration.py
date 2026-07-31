@@ -90,7 +90,6 @@ def validate_preregistration_protocol(protocol: Mapping[str, Any]) -> None:
         "methods",
         "ablations",
         "budget_grid",
-        "confirmatory_seeds",
         "exclusions",
     }
     if protocol.get("protocol_version") != 1:
@@ -123,10 +122,27 @@ def validate_preregistration_protocol(protocol: Mapping[str, Any]) -> None:
     }
     if method_names & ablation_names:
         raise ValueError("methods and ablations must use distinct identifiers")
-    seeds = [
-        int(seed)
-        for seed in _require_nonempty_sequence(protocol, "confirmatory_seeds")
-    ]
+    confirmatory_seed_values = protocol.get("confirmatory_seeds", ())
+    if not isinstance(confirmatory_seed_values, Sequence) or isinstance(
+        confirmatory_seed_values, (str, bytes)
+    ):
+        raise ValueError("confirmatory_seeds must be an array")
+    stage = ExperimentStage(str(protocol["stage"]))
+    if not confirmatory_seed_values:
+        seed_policy = protocol.get("confirmatory_seed_policy")
+        if stage is ExperimentStage.CONFIRMATORY:
+            raise ValueError(
+                "confirmatory protocols require materialized confirmatory_seeds"
+            )
+        if not isinstance(seed_policy, Mapping) or not (
+            seed_policy.get("status") == "reserved_unmaterialized"
+            and seed_policy.get("materialized") is False
+        ):
+            raise ValueError(
+                "an exploratory candidate without confirmatory seeds must "
+                "declare a reserved_unmaterialized confirmatory_seed_policy"
+            )
+    seeds = [int(seed) for seed in confirmatory_seed_values]
     if len(seeds) != len(set(seeds)):
         raise ValueError("confirmatory_seeds must be unique")
     pilot_seeds = protocol.get("pilot_seeds", ())

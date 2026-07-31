@@ -1,0 +1,208 @@
+{
+  "protocol_version": 1,
+  "study_id": "fidelitymcts-sqlite-l2-phase5a-candidate-v1",
+  "stage": "exploratory",
+  "draft_status": "complete_candidate_not_preregistered_not_frozen",
+  "approval_required_before_freeze": true,
+  "hypotheses": [
+    "H1: FidelityMCTS improves fixed-reference success-cost hypervolume over cheap-only search and fixed cascades",
+    "H2: At matched verifier success, estimate the paired differences in normalized cost and executable calls between FidelityMCTS and accurate-only routing without a directional superiority claim",
+    "H3: discrepancy-aware routing improves paired success over uncertainty-threshold routing at matched budget",
+    "H4: learned EVC stopping reduces normalized cost without a success loss larger than 0.05"
+  ],
+  "primary_endpoints": [
+    "verifier_success_rate",
+    "normalized_compute_cost",
+    "fixed_reference_success_cost_hypervolume"
+  ],
+  "secondary_endpoints": [
+    "paired_success_difference",
+    "paired_normalized_cost_difference",
+    "accurate_calls",
+    "calls_by_fidelity",
+    "execution_failure_rate",
+    "latency_s",
+    "router_rmse",
+    "router_brier",
+    "router_nll",
+    "router_interval_coverage",
+    "router_ece",
+    "ope_absolute_error",
+    "overlap_effective_sample_size"
+  ],
+  "benchmark": {
+    "type": "sqlite-query-repair-l2-v1",
+    "version": "immutable-fixtures-v1",
+    "execution_engine": "Python stdlib sqlite3 in-memory disposable clones with read-only authorizer and progress limits",
+    "exploratory_task_ids": [
+      "sqlite-pilot-repeat-paid",
+      "sqlite-pilot-overdue-loans",
+      "sqlite-pilot-agent-resolution",
+      "sqlite-pilot-reorder-cost"
+    ],
+    "partitions": {
+      "development_training": {
+        "status": "materialized",
+        "template_families": ["grouped_aggregation", "row_filter", "grouped_arithmetic"]
+      },
+      "calibration": {
+        "status": "materialized",
+        "template_families": ["anti_join", "conditional_count"]
+      },
+      "exploratory_pilot": {
+        "status": "materialized",
+        "template_families": ["join_group_having", "nullable_date_filter", "filtered_average", "conditional_arithmetic"]
+      },
+      "future_confirmatory": {
+        "status": "reserved_unmaterialized",
+        "planned_task_count": 120,
+        "task_ids": null,
+        "seeds": null
+      }
+    },
+    "cheap_query_cost": 0.25,
+    "executable_query_cost": 4.0,
+    "execution_timeout_s": 0.25,
+    "maximum_vm_steps": 100000
+  },
+  "training": {
+    "router_target": "absolute cheap-versus-verified discrepancy EVC proxy; explicitly not a causal value-of-compute target",
+    "development_task_ids": [
+      "sqlite-dev-paid-totals",
+      "sqlite-dev-low-stock",
+      "sqlite-dev-category-value"
+    ],
+    "calibration_task_ids": [
+      "sqlite-cal-authors-no-loans",
+      "sqlite-cal-open-high-priority"
+    ],
+    "ridge": 1.0,
+    "calibration_coverage": 0.9,
+    "split_policy": "template-family-disjoint immutable fixtures; no exploratory or future-confirmatory outcome enters training",
+    "pilot_outcomes_used_for_training": false
+  },
+  "methods": [
+    "direct",
+    "cheap_only",
+    "accurate_only",
+    "fixed_cascade",
+    "random_matched",
+    "uncertainty_threshold",
+    "learned_direct",
+    "learned_evc_proxy",
+    "fidelity_mcts",
+    "oracle_counterfactual"
+  ],
+  "ablations": [
+    "fidelity_no_discrepancy",
+    "fidelity_no_audit",
+    "fidelity_fixed_stopping",
+    "fidelity_no_verification",
+    "fidelity_no_tree_reuse",
+    "fidelity_cheap_fidelity_only"
+  ],
+  "method_settings": {
+    "fixed_cascade": {"top_k": 2, "cheap_token_budget": 8},
+    "uncertainty_threshold": {"z_score": 1.0, "cheap_token_budget": 8},
+    "learned_direct": {"cheap_token_budget": 8},
+    "learned_evc_proxy": {
+      "evc_query_limit": 5,
+      "accurate_cost": 4.0,
+      "cost_weight": 0.1,
+      "audit_probability": 0.1,
+      "cheap_token_budget": 8
+    },
+    "fidelity_mcts": {
+      "accurate_cost": 4.0,
+      "cost_weight": 0.1,
+      "minimum_net_evc": 0.0,
+      "audit_probability": 0.1,
+      "stop_z_score": 1.0,
+      "fixed_query_limit": 6,
+      "cheap_token_budget": 8
+    }
+  },
+  "budget_grid": [
+    {"max_cost": 4.0, "max_tokens": 8, "max_accurate_calls": 1, "max_iterations": 1, "deadline_s": 2.0, "max_model_calls": 1, "max_environment_calls": 1},
+    {"max_cost": 5.0, "max_tokens": 32, "max_accurate_calls": 1, "max_iterations": 5, "deadline_s": 2.0, "max_model_calls": 5, "max_environment_calls": 1},
+    {"max_cost": 9.0, "max_tokens": 32, "max_accurate_calls": 2, "max_iterations": 6, "deadline_s": 2.0, "max_model_calls": 6, "max_environment_calls": 2},
+    {"max_cost": 13.0, "max_tokens": 32, "max_accurate_calls": 3, "max_iterations": 7, "deadline_s": 2.0, "max_model_calls": 7, "max_environment_calls": 3},
+    {"max_cost": 17.0, "max_tokens": 32, "max_accurate_calls": 4, "max_iterations": 8, "deadline_s": 2.0, "max_model_calls": 8, "max_environment_calls": 4}
+  ],
+  "resource_accounting": {
+    "normalized_cost_definition": "model prediction=0.25; executable SQLite query=4.0; final task action reported separately and excluded from compute matching",
+    "hard_limits": ["model calls", "accurate calls", "normalized cost", "token units", "environment calls", "SQLite VM steps", "per-query timeout", "planning deadline"],
+    "failed_execution_charge": "retain full conservative reservation and record a negative verified failure outcome",
+    "random_matching": "exact randomized accurate-call quota estimated on calibration fixtures only"
+  },
+  "pilot_seeds": [501, 502, 503, 504, 505, 506, 507, 508],
+  "confirmatory_seeds": [],
+  "confirmatory_seed_policy": {
+    "status": "reserved_unmaterialized",
+    "materialized": false,
+    "source": "future externally timestamped randomness after user approval",
+    "generation_time": "after final benchmark, method, budget, analysis, and artifact-hash approval",
+    "access_policy": "no generation, inspection, or execution before freeze and external registration"
+  },
+  "analysis": {
+    "confidence_level": 0.95,
+    "interval_method": "paired stratified bootstrap over task_id and paired_seed",
+    "bootstrap_samples": 10000,
+    "multiple_comparison_correction": "Holm within each primary confirmatory hypothesis family",
+    "stopping_rule": "run_all_declared_units",
+    "estimands": [
+      "average paired verifier-success difference at each budget",
+      "average paired normalized-cost difference at each budget",
+      "success-cost hypervolume difference over the full budget curve",
+      "diagnostic comparison of naive, IPS, SNIPS, and doubly robust estimates against randomized online pilot outcomes; not a confirmatory hypothesis"
+    ],
+    "hypervolume_reference": {"success": 0.0, "cost": 24.0},
+    "calibration_bins": 10,
+    "ope_min_propensity": 0.05,
+    "noninferiority_margin": 0.05,
+    "pareto_objectives": {"maximize": ["success"], "minimize": ["normalized_cost", "execution_failures"]},
+    "power_method": "pilot-based paired variance diagnostic followed by a frozen sample-size decision before confirmatory materialization",
+    "sample_size_plan": {
+      "status": "exploratory_pilot_informed_not_frozen",
+      "unit": "paired task-seed success-cost curve",
+      "planning_target_pairs": 120,
+      "h1_pilot_pairs": 32,
+      "h1_observed_hypervolume_effect_vs_cheap_only": 3.78125,
+      "h1_task_stratified_bootstrap_standard_error": 1.3649880289558793,
+      "h1_task_stratified_bootstrap_ci95": [0.8125, 5.90625],
+      "h1_normal_approximation_pairs": 47,
+      "source_budget_grid": [4.0, 5.0, 9.0, 13.0, 17.0],
+      "target_power": 0.8,
+      "multiplicity_assumption": "first-step Holm alpha 0.0125 for the H1-H4 family",
+      "caveat": "Only four exploratory task clusters informed this estimate; 120 pairs is a conservative planning target, not a frozen confirmatory sample size."
+    }
+  },
+  "failure_policy": {
+    "abort_on_error": false,
+    "exclude_after_run": false,
+    "report_all_failures": true,
+    "retry_policy": "no automatic retries; preserve and charge every failed or timed-out execution"
+  },
+  "exclusions": [
+    "no result-dependent task, seed, method, endpoint, or budget exclusions",
+    "paired exclusion only for a preregistered infrastructure failure affecting all methods for the unit",
+    "SQL errors, verifier failures, deadline interrupts, and budget exhaustion remain reported outcomes"
+  ],
+  "multiplicity_policy": {
+    "primary_family": "Holm correction over H1-H4",
+    "secondary_outcomes": "descriptive intervals labelled secondary",
+    "ope": "diagnostic reporting only; no confirmatory hypothesis or multiplicity-adjusted claim",
+    "ablations": "descriptive unless separately promoted before freeze"
+  },
+  "artifact_hash_policy": {
+    "status": "candidate hashes must be refreshed immediately before user-approved freeze",
+    "required": ["benchmark implementation", "analysis implementation", "protocol", "fixture manifest", "package lock or wheel"]
+  },
+  "artifacts": {
+    "docs/PHASE5A_SQLITE.md": "845dde78f27ba6ec0b3615137fef1839d78d63f436e8b571dd5d45803c884d1e",
+    "experiments/pilots/sqlite_l2_smoke.json": "12d54a6bc765b7093157904931a5ea0b0b81ee0a1153c5fb1c92b0d53836db11",
+    "src/montecarlgym/experiments/analysis.py": "5b0cddb04ae8aa9cb01549d3042e75851c85bf0fa3dcd68ff2f7125fb243c7aa",
+    "src/montecarlgym/experiments/sqlite_l2.py": "3ba27755b1beda56f6b672c48b379dc5425da44a5fe6331423fb525195ce19da",
+    "src/montecarlgym/experiments/sqlite_study.py": "485ffc7b8ec741d90566f4b3f8fa9c8995c12f0e73f4a4846df35b190c0d36c0"
+  }
+}

@@ -197,3 +197,77 @@ class RandomEscalationRouter:
             route_propensity=self.escalation_probability / len(candidates),
             audit=True,
         )
+
+
+@dataclass(slots=True)
+class MatchedRandomEscalationRouter:
+    """Escalate an exact randomized quota after cheap evaluation.
+
+    This matched-budget baseline samples without replacement.  Constant-cost
+    accurate models therefore use exactly the declared accurate-call and
+    normalized-cost quota whenever the hard budget can afford it.  The logged
+    propensity is the conditional probability of the chosen branch at that
+    sequential randomized decision.
+    """
+
+    cheap_model_id: str
+    accurate_model_id: str
+    target_accurate_calls: int
+    seed: int = 0
+    cheap_token_budget: int = 0
+    accurate_token_budget: int = 0
+    cheap_rollout_depth: int = 1
+    accurate_rollout_depth: int = 1
+    _rng: Random = field(init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        if self.target_accurate_calls < 0:
+            raise ValueError("target_accurate_calls must be non-negative")
+        self._rng = Random(self.seed)
+
+    def choose(self, context: RouterContext) -> ComputeAction | None:
+        if (
+            context.feasible_model_ids
+            and self.cheap_model_id not in context.feasible_model_ids
+        ):
+            return None
+        for action in context.candidate_actions:
+            if context.query_counts.get((action, self.cheap_model_id), 0) == 0:
+                return ComputeAction(
+                    state_id=context.state_id,
+                    task_action=action,
+                    model_id=self.cheap_model_id,
+                    token_budget=self.cheap_token_budget,
+                    rollout_depth=self.cheap_rollout_depth,
+                    route_propensity=1.0,
+                )
+        completed = sum(
+            context.query_counts.get((action, self.accurate_model_id), 0)
+            for action in context.candidate_actions
+        )
+        target = min(self.target_accurate_calls, len(context.candidate_actions))
+        if completed >= target or context.remaining_budget.max_accurate_calls <= 0:
+            return None
+        if (
+            context.feasible_model_ids
+            and self.accurate_model_id not in context.feasible_model_ids
+        ):
+            return None
+        candidates = [
+            action
+            for action in context.candidate_actions
+            if action not in context.verified_actions
+        ]
+        if not candidates:
+            return None
+        chosen = candidates[self._rng.randrange(len(candidates))]
+        return ComputeAction(
+            state_id=context.state_id,
+            task_action=chosen,
+            model_id=self.accurate_model_id,
+            token_budget=self.accurate_token_budget,
+            rollout_depth=self.accurate_rollout_depth,
+            request_verification=True,
+            route_propensity=1.0 / len(candidates),
+            audit=True,
+        )

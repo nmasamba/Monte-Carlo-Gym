@@ -68,6 +68,32 @@ These are exploratory pilots. Use them for debugging, budget selection,
 variance estimates, and power analysis only. Do not copy their endpoint values
 into a paper's confirmatory results.
 
+## Phase 5A offline executable SQLite L2
+
+The dependency-free L2 smoke runs every required local baseline and prescribed
+ablation at five hard budgets:
+
+```bash
+python experiments/run_sqlite.py \
+  --stage exploratory \
+  --config experiments/pilots/sqlite_l2_smoke.json \
+  --output output/pilots/sqlite-l2-smoke-001
+```
+
+Raw decisions, episodes, and infrastructure failures are written and
+fingerprinted before aggregation. Reproduce the analysis into a new file:
+
+```bash
+python experiments/analyze_sqlite.py \
+  --input output/pilots/sqlite-l2-smoke-001 \
+  --output output/pilots/sqlite-l2-smoke-001-reanalysis.json
+```
+
+The future-confirmatory SQLite partition is reserved but unmaterialized. The
+runner refuses confirmatory and preregistered output paths. See
+`docs/PHASE5A_SQLITE.md` for the execution boundary, record schema, analysis,
+ablations, power diagnostic, and approval gates.
+
 ## Freeze before confirmatory data
 
 The directories have distinct roles:

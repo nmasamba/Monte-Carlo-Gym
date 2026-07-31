@@ -16,6 +16,7 @@ from ..routing import BranchSummary, ComputeRouter, RouterContext
 from ..types import (
     Action,
     ComputeAction,
+    EvidenceProvenance,
     Fidelity,
     ResourceUsage,
     SearchBudget,
@@ -64,6 +65,16 @@ class AdaptiveQueryTrace:
     environment_calls: int
     randomized_audit: bool
     expected_value_of_compute: float | None
+    latency_s: float
+    terminated: bool
+    truncated: bool
+    execution_status: str
+    failure_type: str | None
+    synthetic: bool
+    model_predicted: bool
+    executable: bool
+    verifier_passed: bool | None
+    calibration_features: Mapping[str, float]
 
 
 class AdaptiveTraceSink(Protocol):
@@ -327,6 +338,36 @@ class AdaptiveComputePlanner:
                 expected_value_of_compute=(
                     compute_action.expected_value_of_compute
                 ),
+                latency_s=observation.latency_s,
+                terminated=observation.terminated,
+                truncated=observation.truncated,
+                execution_status=str(
+                    observation.metadata.get("execution_status", "completed")
+                ),
+                failure_type=(
+                    None
+                    if observation.metadata.get("failure_type") is None
+                    else str(observation.metadata["failure_type"])
+                ),
+                synthetic=(
+                    observation.provenance is EvidenceProvenance.SYNTHETIC
+                ),
+                model_predicted=(
+                    observation.provenance
+                    in {
+                        EvidenceProvenance.MODEL_PREDICTED,
+                        EvidenceProvenance.LEARNED,
+                    }
+                ),
+                executable=(
+                    observation.provenance is EvidenceProvenance.EXECUTABLE
+                ),
+                verifier_passed=(
+                    None
+                    if observation.metadata.get("verifier_passed") is None
+                    else bool(observation.metadata["verifier_passed"])
+                ),
+                calibration_features=dict(context_features),
             )
             self.trace_sink.record(trace)
             traces.append(asdict(trace))

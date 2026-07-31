@@ -56,3 +56,8 @@ The falsifiable paper claim is:
   EVC-proxy routing, randomized audit traffic, off-policy estimators, adaptive
   MCTS-frontier evaluation, and guarded preregistration mechanics. Its real
   FrozenLake integration is still an exploratory L1 pilot, not paper evidence.
+- Phase 5A supplies an offline SQLite L2 executable benchmark, objective
+  disposable verification, all required local matched-budget baselines,
+  immutable raw records, paired/Pareto/calibration/OPE/power analysis, and an
+  unregistered protocol candidate. Future-confirmatory fixtures and seeds are
+  deliberately absent.

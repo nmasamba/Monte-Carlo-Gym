@@ -13,3 +13,8 @@ Planned outputs include:
 
 Each figure/table script must record its input run identifiers and analysis
 configuration.
+
+Phase 5A implements these outputs for SQLite in
+`montecarlgym.experiments.analysis`. `experiments/analyze_sqlite.py` reads only
+the immutable raw JSONL files and the resolved protocol; it never imports or
+executes a planner.

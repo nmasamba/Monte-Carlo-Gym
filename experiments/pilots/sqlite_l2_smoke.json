@@ -1,0 +1,189 @@
+{
+  "protocol_version": 1,
+  "study_id": "fidelitymcts-sqlite-l2-phase5a-smoke",
+  "stage": "exploratory",
+  "draft_status": "executable_exploratory_smoke_not_preregistered",
+  "hypotheses": [
+    "Engineering smoke: every required baseline completes at all five hard-budget points",
+    "Random escalation consumes its calibration-matched accurate-call quota when affordable"
+  ],
+  "primary_endpoints": [
+    "verifier_success_rate",
+    "normalized_compute_cost"
+  ],
+  "secondary_endpoints": [
+    "accurate_calls",
+    "model_calls_by_fidelity",
+    "execution_failures",
+    "latency_s",
+    "router_calibration",
+    "off_policy_estimation_error"
+  ],
+  "benchmark": {
+    "type": "sqlite-query-repair-l2-v1",
+    "version": "immutable-fixtures-v1",
+    "execution_engine": "Python stdlib sqlite3 in-memory disposable clones",
+    "exploratory_task_ids": [
+      "sqlite-pilot-repeat-paid",
+      "sqlite-pilot-agent-resolution"
+    ],
+    "partitions": {
+      "development_training": "materialized immutable fixtures",
+      "calibration": "materialized immutable fixtures",
+      "exploratory_pilot": "materialized immutable fixtures",
+      "future_confirmatory": "reserved, unmaterialized, and inaccessible"
+    },
+    "cheap_query_cost": 0.25,
+    "executable_query_cost": 4.0,
+    "execution_timeout_s": 0.25,
+    "maximum_vm_steps": 100000
+  },
+  "training": {
+    "router_target": "absolute cheap-versus-verified discrepancy EVC proxy",
+    "development_task_ids": [
+      "sqlite-dev-paid-totals",
+      "sqlite-dev-low-stock",
+      "sqlite-dev-category-value"
+    ],
+    "calibration_task_ids": [
+      "sqlite-cal-authors-no-loans",
+      "sqlite-cal-open-high-priority"
+    ],
+    "ridge": 1.0,
+    "calibration_coverage": 0.9,
+    "split_policy": "template-family-disjoint immutable development, calibration, and exploratory partitions",
+    "pilot_outcomes_used_for_training": false
+  },
+  "methods": [
+    "direct",
+    "cheap_only",
+    "accurate_only",
+    "fixed_cascade",
+    "random_matched",
+    "uncertainty_threshold",
+    "learned_direct",
+    "learned_evc_proxy",
+    "fidelity_mcts",
+    "oracle_counterfactual"
+  ],
+  "ablations": [
+    "fidelity_no_discrepancy",
+    "fidelity_no_audit",
+    "fidelity_fixed_stopping",
+    "fidelity_no_verification",
+    "fidelity_no_tree_reuse",
+    "fidelity_cheap_fidelity_only"
+  ],
+  "method_settings": {
+    "fixed_cascade": {"top_k": 2, "cheap_token_budget": 8},
+    "uncertainty_threshold": {"z_score": 1.0, "cheap_token_budget": 8},
+    "learned_direct": {"cheap_token_budget": 8},
+    "learned_evc_proxy": {
+      "evc_query_limit": 5,
+      "accurate_cost": 4.0,
+      "cost_weight": 0.1,
+      "audit_probability": 0.1,
+      "cheap_token_budget": 8
+    },
+    "fidelity_mcts": {
+      "accurate_cost": 4.0,
+      "cost_weight": 0.1,
+      "minimum_net_evc": 0.0,
+      "audit_probability": 0.1,
+      "stop_z_score": 1.0,
+      "fixed_query_limit": 6,
+      "cheap_token_budget": 8
+    }
+  },
+  "budget_grid": [
+    {
+      "max_cost": 5.0,
+      "max_tokens": 32,
+      "max_accurate_calls": 1,
+      "max_iterations": 5,
+      "deadline_s": 2.0,
+      "max_model_calls": 5,
+      "max_environment_calls": 1
+    },
+    {
+      "max_cost": 9.0,
+      "max_tokens": 32,
+      "max_accurate_calls": 2,
+      "max_iterations": 6,
+      "deadline_s": 2.0,
+      "max_model_calls": 6,
+      "max_environment_calls": 2
+    },
+    {
+      "max_cost": 13.0,
+      "max_tokens": 32,
+      "max_accurate_calls": 3,
+      "max_iterations": 7,
+      "deadline_s": 2.0,
+      "max_model_calls": 7,
+      "max_environment_calls": 3
+    },
+    {
+      "max_cost": 17.0,
+      "max_tokens": 32,
+      "max_accurate_calls": 4,
+      "max_iterations": 8,
+      "deadline_s": 2.0,
+      "max_model_calls": 8,
+      "max_environment_calls": 4
+    },
+    {
+      "max_cost": 21.0,
+      "max_tokens": 40,
+      "max_accurate_calls": 4,
+      "max_iterations": 10,
+      "deadline_s": 2.0,
+      "max_model_calls": 10,
+      "max_environment_calls": 4
+    }
+  ],
+  "resource_accounting": {
+    "normalized_cost_definition": "lexical prediction=0.25; disposable SQLite execution=4.0; final common task execution reported separately",
+    "token_definition": "local lexical feature units consumed by cheap predictions",
+    "step_definition": "one environment call per isolated SQLite execution with an additional hard VM-step ceiling",
+    "failed_execution_charge": "full conservative executable quote",
+    "deadline_scope": "every planning call plus per-query SQLite progress-handler timeout"
+  },
+  "pilot_seeds": [501],
+  "confirmatory_seeds": [],
+  "confirmatory_seed_policy": {
+    "status": "reserved_unmaterialized",
+    "materialized": false,
+    "source": "future externally timestamped randomness after user approval",
+    "access_policy": "do not generate or inspect before final protocol freeze"
+  },
+  "analysis": {
+    "confidence_level": 0.95,
+    "interval_method": "paired bootstrap over task_id and paired_seed",
+    "bootstrap_samples": 200,
+    "multiple_comparison_correction": "Holm within each future confirmatory hypothesis family; not applied to this engineering smoke",
+    "stopping_rule": "run_all_declared_units",
+    "estimands": [
+      "paired success difference at matched budget",
+      "paired normalized-cost difference",
+      "success-cost hypervolume",
+      "offline routing policy value"
+    ],
+    "hypervolume_reference": {"success": 0.0, "cost": 24.0},
+    "calibration_bins": 5,
+    "ope_min_propensity": 0.05,
+    "power_method": "exploratory paired normal approximation"
+  },
+  "failure_policy": {
+    "abort_on_error": false,
+    "exclude_after_run": false,
+    "report_all_failures": true,
+    "retry_policy": "no automatic retries; record and charge failed or timed-out execution"
+  },
+  "exclusions": [
+    "no result-dependent exclusions",
+    "a paired unit may be excluded only for a declared infrastructure failure affecting every method",
+    "SQL errors and timeouts remain outcomes and are never converted to zero reward"
+  ],
+  "artifacts": {}
+}

@@ -33,6 +33,7 @@ class EvidenceProvenance(str, Enum):
     """
 
     SYNTHETIC = "synthetic"
+    MODEL_PREDICTED = "model_predicted"
     LEARNED = "learned"
     EXECUTABLE = "executable"
     REAL = "real"

@@ -4,8 +4,14 @@
   "stage": "exploratory",
   "draft_status": "executable_exploratory_smoke_not_preregistered",
   "hypotheses": [
-    "Engineering smoke: every required baseline completes at all five hard-budget points",
+    "Engineering smoke: every configured local comparison completes at all five planning-call budget points",
     "Random escalation consumes its calibration-matched accurate-call quota when affordable"
+  ],
+  "validity_notes": [
+    "The task is one decision and fidelity_mcts directly invokes the adaptive planner without an outer MCTS tree.",
+    "The ten method labels are not the revised required baseline set; learned_direct is cheap-only and oracle_counterfactual is budget/order constrained.",
+    "Seeds permute candidate order rather than create independent task units, and the named ablations are not all isolated.",
+    "OPE, bootstrap, hypervolume, and power outputs are exploratory diagnostics, not the revised confirmatory estimands."
   ],
   "primary_endpoints": [
     "verifier_success_rate",
@@ -159,7 +165,7 @@
   },
   "analysis": {
     "confidence_level": 0.95,
-    "interval_method": "paired bootstrap over task_id and paired_seed",
+    "interval_method": "exploratory generic paired bootstrap over emitted record indexes; not task-clustered confirmatory inference",
     "bootstrap_samples": 200,
     "multiple_comparison_correction": "Holm within each future confirmatory hypothesis family; not applied to this engineering smoke",
     "stopping_rule": "run_all_declared_units",
@@ -167,12 +173,12 @@
       "paired success difference at matched budget",
       "paired normalized-cost difference",
       "success-cost hypervolume",
-      "offline routing policy value"
+      "selected randomized-verification OPE diagnostic"
     ],
     "hypervolume_reference": {"success": 0.0, "cost": 24.0},
     "calibration_bins": 5,
     "ope_min_propensity": 0.05,
-    "power_method": "exploratory paired normal approximation"
+    "power_method": "historical exploratory paired normal approximation; invalid for a confirmatory sample-size decision"
   },
   "failure_policy": {
     "abort_on_error": false,

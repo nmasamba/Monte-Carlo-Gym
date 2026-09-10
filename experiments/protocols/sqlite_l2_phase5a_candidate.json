@@ -2,13 +2,19 @@
   "protocol_version": 1,
   "study_id": "fidelitymcts-sqlite-l2-phase5a-candidate-v1",
   "stage": "exploratory",
-  "draft_status": "complete_candidate_not_preregistered_not_frozen",
+  "draft_status": "mechanism_pilot_candidate_not_fit_for_sequential_claim",
   "approval_required_before_freeze": true,
+  "research_scope": {
+    "classification": "one-decision executable instrumentation diagnostic",
+    "supports": ["resource-accounting tests", "record-schema tests", "exploratory analysis development"],
+    "does_not_support": ["sequential branch allocation", "outer-tree MCTS benefit", "tree reuse", "open-ended tool use", "episode-level matched budgets", "agent reliability", "confirmatory inference"],
+    "disposition": "retain for diagnostics; do not freeze or promote unchanged"
+  },
   "hypotheses": [
-    "H1: FidelityMCTS improves fixed-reference success-cost hypervolume over cheap-only search and fixed cascades",
-    "H2: At matched verifier success, estimate the paired differences in normalized cost and executable calls between FidelityMCTS and accurate-only routing without a directional superiority claim",
+    "H1: the historical fidelity_mcts-labelled adaptive-planner path improves exploratory fixed-reference success-cost hypervolume over cheap-only and fixed-cascade paths",
+    "H2: at matched verifier success, describe paired normalized-cost and executable-call differences between the adaptive-planner path and accurate-only routing without a directional superiority claim",
     "H3: discrepancy-aware routing improves paired success over uncertainty-threshold routing at matched budget",
-    "H4: learned EVC stopping reduces normalized cost without a success loss larger than 0.05"
+    "H4: historical absolute-discrepancy proxy stopping reduces normalized cost without a success loss larger than 0.05"
   ],
   "primary_endpoints": [
     "verifier_success_rate",
@@ -101,6 +107,17 @@
     "fidelity_no_tree_reuse",
     "fidelity_cheap_fidelity_only"
   ],
+  "method_validity_notes": {
+    "fidelity_mcts": "historical identifier; this runner calls AdaptiveComputePlanner directly and does not execute an outer MCTS tree",
+    "oracle_counterfactual": "budget-limited and candidate-order-sensitive; not guaranteed to be an upper bound",
+    "learned_direct": "cheap-model-only learned predictor; not a query-level multi-model router"
+  },
+  "ablation_validity_notes": {
+    "fidelity_no_discrepancy": "still uses an updating RunningDiscrepancyModel and is not a true no-correction intervention",
+    "fidelity_no_verification": "reduces to the same cheap-only route as fidelity_cheap_fidelity_only",
+    "fidelity_cheap_fidelity_only": "reduces to the same cheap-only route as fidelity_no_verification",
+    "fidelity_no_tree_reuse": "structurally inapplicable in this one-decision fixture"
+  },
   "method_settings": {
     "fixed_cascade": {"top_k": 2, "cheap_token_budget": 8},
     "uncertainty_threshold": {"z_score": 1.0, "cheap_token_budget": 8},
@@ -163,18 +180,15 @@
     "pareto_objectives": {"maximize": ["success"], "minimize": ["normalized_cost", "execution_failures"]},
     "power_method": "pilot-based paired variance diagnostic followed by a frozen sample-size decision before confirmatory materialization",
     "sample_size_plan": {
-      "status": "exploratory_pilot_informed_not_frozen",
-      "unit": "paired task-seed success-cost curve",
-      "planning_target_pairs": 120,
-      "h1_pilot_pairs": 32,
-      "h1_observed_hypervolume_effect_vs_cheap_only": 3.78125,
-      "h1_task_stratified_bootstrap_standard_error": 1.3649880289558793,
-      "h1_task_stratified_bootstrap_ci95": [0.8125, 5.90625],
-      "h1_normal_approximation_pairs": 47,
+      "status": "invalidated_requires_new_independent_tasks",
+      "unit": "independent task or held-out template family; order permutations are repeated measurements",
+      "planning_target_pairs": null,
+      "pilot_order_permutations": 32,
+      "independent_exploratory_tasks": 4,
       "source_budget_grid": [4.0, 5.0, 9.0, 13.0, 17.0],
       "target_power": 0.8,
       "multiplicity_assumption": "first-step Holm alpha 0.0125 for the H1-H4 family",
-      "caveat": "Only four exploratory task clusters informed this estimate; 120 pairs is a conservative planning target, not a frozen confirmatory sample size."
+      "caveat": "The previous 32-pair calculation treated action-order permutations of four tasks as independent and its raw pilot lineage is not versioned here. Do not use it for a confirmatory sample-size decision."
     }
   },
   "failure_policy": {
@@ -195,12 +209,12 @@
     "ablations": "descriptive unless separately promoted before freeze"
   },
   "artifact_hash_policy": {
-    "status": "candidate hashes must be refreshed immediately before user-approved freeze",
-    "required": ["benchmark implementation", "analysis implementation", "protocol", "fixture manifest", "package lock or wheel"]
+    "status": "partial diagnostic hashes only; current map does not satisfy a freeze gate",
+    "required_before_any_future_freeze": ["benchmark implementation", "analysis implementation", "protocol", "fixture manifest", "dependency lock or exact built artifact", "raw pilot lineage"]
   },
   "artifacts": {
-    "docs/PHASE5A_SQLITE.md": "845dde78f27ba6ec0b3615137fef1839d78d63f436e8b571dd5d45803c884d1e",
-    "experiments/pilots/sqlite_l2_smoke.json": "12d54a6bc765b7093157904931a5ea0b0b81ee0a1153c5fb1c92b0d53836db11",
+    "docs/PHASE5A_SQLITE.md": "e94ec3352044cb97d7aa9affe7548574eb8dd83a4fba16e2cb074035eb51da7f",
+    "experiments/pilots/sqlite_l2_smoke.json": "aacb6a2538dc96ec77b5b8ec51828ac613db595d3f1424b2e92e540f8f019ac6",
     "src/montecarlgym/experiments/analysis.py": "5b0cddb04ae8aa9cb01549d3042e75851c85bf0fa3dcd68ff2f7125fb243c7aa",
     "src/montecarlgym/experiments/sqlite_l2.py": "3ba27755b1beda56f6b672c48b379dc5425da44a5fe6331423fb525195ce19da",
     "src/montecarlgym/experiments/sqlite_study.py": "485ffc7b8ec741d90566f4b3f8fa9c8995c12f0e73f4a4846df35b190c0d36c0"

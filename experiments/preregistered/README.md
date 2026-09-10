@@ -1,5 +1,7 @@
 # Frozen preregistrations
 
+**Status (2026-09-10):** this repository contains no frozen manifest.
+
 Immutable manifests created by `experiments/preregister.py` live here. Each
 contains the complete protocol, its SHA-256 fingerprint, the exact clean Git
 revision, freeze time, and optional public registration URL.

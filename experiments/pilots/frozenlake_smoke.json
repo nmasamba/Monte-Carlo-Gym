@@ -2,8 +2,13 @@
   "protocol_version": 1,
   "study_id": "fidelitymcts-frozenlake-smoke",
   "stage": "exploratory",
+  "draft_status": "engineering_smoke_not_preregistered_not_episode_budgeted",
   "hypotheses": [
-    "Engineering smoke: all selected methods complete under hard budgets"
+    "Engineering smoke: selected methods complete under configured planning-call budgets"
+  ],
+  "validity_notes": [
+    "A fresh SearchBudget is used at each environment step; summed episode usage is not a hard episode envelope.",
+    "This smoke cannot test the revised sequential evidence-acquisition claim or support confirmatory inference."
   ],
   "primary_endpoints": ["episode_success_rate", "normalized_cost"],
   "secondary_endpoints": ["accurate_calls", "model_calls"],
@@ -67,6 +72,7 @@
   },
   "pilot_seeds": [701],
   "confirmatory_seeds": [1701],
+  "confirmatory_seed_status": "historical placeholder only; not frozen, externally registered, or eligible for confirmatory use",
   "analysis": {
     "confidence_level": 0.95,
     "interval_method": "paired_stratified_bootstrap_over_episode_seeds",

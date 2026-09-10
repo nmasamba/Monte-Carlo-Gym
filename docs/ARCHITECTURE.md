@@ -1,17 +1,26 @@
-# MonteCarloGym Architecture Plan, Revision 2
+# MonteCarloGym Architecture Plan, Revision 3
 
-**Project codename:** FidelityMCTS  
-**Status:** architecture and implementation plan  
-**Primary thesis:** learn when to think, which model to use, when to simulate,
-when to verify, and when to act.
+**Project codename:** FidelityMCTS
+
+**Status:** target architecture; not an as-built API reference
+
+**As of:** 2026-09-10
+
+**Primary thesis:** test whether selective predictive and executable evidence
+improves verified success versus cost and risk on sequential agent tasks.
+
+Implementation and research readiness are maintained in
+[`RESEARCH_STATUS.md`](RESEARCH_STATUS.md). In this document, `implemented`
+means present in the repository; `target` and `should` describe planned design.
+Conceptual diagrams may therefore contain interfaces that do not yet exist.
 
 ## 1. Executive decision
 
 MonteCarloGym should not position itself as merely a larger catalogue of MCTS
-variants. The classical algorithms remain important, but they are the
-compatibility layer and experimental substrate.
+variants. The classical algorithms remain important as a reusable kernel and
+experimental substrate.
 
-The differentiated system is a **Gymnasium-compatible adaptive-compute planner**
+The research candidate is a **Gymnasium-compatible adaptive-compute planner**
 that treats simulation and inference as heterogeneous, priced resources. At
 each branch, it may choose:
 
@@ -24,17 +33,28 @@ each branch, it may choose:
 - whether further search has positive expected value;
 - or whether to stop and execute the current best task action.
 
-This is a meta-level planning problem nested inside ordinary planning. A task
+That is the longer-term factorized action space. The first revised empirical
+study restricts the intervention to branch, predictive-versus-executable
+evidence source, and stop; context, topology, token, horizon, and verifier
+policies remain fixed so the effect is identifiable.
+
+This can be a meta-level planning problem nested inside ordinary planning. A task
 action changes the candidate environment state. A compute action changes what
 the planner knows about a task branch.
 
-The open-source deliverable therefore has two deliberately separable layers:
+The open-source deliverable has two deliberately separable layers:
 
 1. **MonteCarloGym Kernel** - a correct, modular MCTS implementation and
    transactional Gymnasium generative-model wrapper.
 2. **FidelityMCTS Research Layer** - model portfolios, branch-level compute
    routing, multi-fidelity uncertainty and discrepancy models, verified replay,
    budget-aware stopping, and optional causal/off-policy correction.
+
+Revision 3 removes the assumption that MCTS must be the best research
+controller. FidelityMCTS must be compared with capacity- and budget-matched
+non-tree policies. The current implementation performs adaptive
+multi-fidelity frontier/action valuation; it does not yet use portfolio models
+to generate model-indexed transitions throughout an outer MCTS tree.
 
 Users who only need UCT should not pay for foundation-model dependencies.
 Researchers should be able to replace every policy without forking the engine.
@@ -55,7 +75,11 @@ embedding Python in an existing agent.
   risk.
 - Direct neural evaluation, rollouts, and mixed evaluation.
 - Verified outcome replay and discrepancy learning.
-- Reproducible experiment orchestration and complete resource accounting.
+- Reproducible experiment orchestration and, as a target, complete decision- and
+  episode-level resource accounting.
+- Explicit comparison of tree and non-tree evidence-acquisition controllers.
+- Candidate/macro-action proposal and controlled branching for open tool spaces.
+- Fixed, versioned context-management and harness policies in primary studies.
 - Optional preference or reward models as objective sources.
 - Optional causal estimators for logged router data.
 - Python API, planner service, and thin adapters for non-Python agents.
@@ -69,6 +93,9 @@ embedding Python in an existing agent.
 - Treating a learned simulator prediction as verified ground truth.
 - Calling a collection of algorithm presets a research contribution.
 - Reporting benchmark gains before preregistered experiments are run.
+- Treating context management, multi-agent topology, and model routing as one
+  unidentifiable joint intervention in the first sequential study.
+- Calling a one-decision mechanism fixture evidence for long-horizon agents.
 
 ## 3. Design principles
 
@@ -83,7 +110,10 @@ embedding Python in an existing agent.
 5. **Fidelity is evidence, not truth by declaration.** Every observation carries
    provenance, uncertainty, and measured resource use.
 6. **Budget constraints are hard.** The engine cannot silently exceed token,
-   latency, cost, accurate-call, or iteration limits.
+   latency, cost, accurate-call, or iteration limits within the declared budget
+   scope. The current scope is one planning call; sequential studies must add
+   and enforce an episode envelope. Risk is measured but is not currently a
+   `SearchBudget` ceiling.
 7. **Verification drives learning.** Cheap predictions are paired with later
    executable outcomes whenever possible.
 8. **Causality is targeted.** Use it where selection bias matters: router
@@ -92,6 +122,10 @@ embedding Python in an existing agent.
    sandboxes, dry runs, or approval-gated execution.
 10. **Research claims are artifact-backed.** Every result must preserve config,
     code revision, seeds, traces, costs, and confidence intervals.
+11. **MCTS must earn its complexity.** Compare it with simple fixed, dynamic,
+    sampling, aggregation, and non-tree controllers under the same envelope.
+12. **Evaluation state is external.** Agent self-reports and generic judges do
+    not replace independently verified environment state.
 
 ## 4. System decomposition
 
@@ -301,9 +335,9 @@ classDiagram
     MCTSEngine --> BackupOperator
 ```
 
-`UCTNode`, `BayesianNode`, and `AlphaGoNode` are convenient capability presets.
-The production implementation should prefer small statistic components over a
-deep inheritance hierarchy when combinations are required.
+`UCTNode`, `BayesianNode`, and `AlphaGoNode` are conceptual capability groupings,
+not current concrete subclasses. The implementation uses composable statistics
+and policies rather than this inheritance hierarchy.
 
 ### 5.2 Adaptive-compute UML
 
@@ -368,10 +402,11 @@ classDiagram
     VerifiedReplayStore --> OffPolicyEstimator
 ```
 
-## 6. Required protocols
+## 6. Required and target protocols
 
-The public API should be built around structural protocols and immutable value
-objects. Framework-specific adapters belong in optional packages.
+The current public API is built around structural protocols and immutable value
+objects. The excerpt below captures the implemented model/router boundary;
+framework-specific adapters remain planned optional packages.
 
 ```python
 class GenerativeModel(Protocol):
@@ -471,13 +506,17 @@ Subtree reuse is never allowed to carry stale hidden state across episodes.
 Gymnasium is a user-facing integration, not a restriction on the core model
 protocol.
 
-An adapter must implement one of these strategies:
+The target adapter set includes these strategies:
 
 1. native `get_state()` / `set_state()`;
 2. environment-defined `clone_state()` / `restore_state()`;
 3. safe deep copy of the unwrapped environment and RNG state;
 4. reconstruction from a deterministic event log;
 5. an external generative model that does not mutate the live environment.
+
+The repository currently implements native `get_state()`/`set_state()` and
+validated deep-copy strategies. Environment-defined clone state, deterministic
+event-log reconstruction, and external agent-environment adapters are planned.
 
 The wrapper must preserve:
 
@@ -590,14 +629,22 @@ not contain `if algorithm == "alphago_zero"` branches.
 
 ### 9.2 Multi-fidelity expansion
 
-A search leaf may hold several observations for one task action. Evidence is
-not overwritten when the accurate simulator is queried. The aggregator can:
+In the target architecture, a search leaf may hold several observations for one
+task action. Evidence is not overwritten when an executable reference is
+queried. The aggregator can:
 
 - prefer verified evidence;
 - perform a Bayesian update;
 - correct a cheap estimate with a learned discrepancy distribution;
 - retain model disagreement as epistemic uncertainty;
 - or reject incompatible model versions.
+
+The implemented `AdaptiveFrontierEvaluator` performs multi-fidelity action
+valuation after the outer MCTS model has already created a frontier. Outer tree
+transitions still come from one `SimulationModel`, and portfolio observation
+`next_state` values are not inserted into the search graph. Calling this
+multi-fidelity transition search would therefore be inaccurate until that
+composition is redesigned.
 
 ## 10. Classical algorithm presets
 
@@ -685,19 +732,21 @@ returns. They are orthogonal and may be used together.
 
 ### 11.1 Model portfolio
 
-A useful initial portfolio is:
+A useful target portfolio for the next study is:
 
-- **Cheap model:** a language world model such as Qwen-AgentWorld or Dreamer-7B
-  used to predict tool effects, terminal likelihood, value, and uncertainty.
-- **Accurate model:** an executable code/database/browser environment such as
-  AgentWorldModel-1K, BrowserGym, or WorkArena.
+- **Predictive model:** a language world model such as Qwen-AgentWorld, used to
+  predict tool effects, terminal likelihood, value, and uncertainty.
+- **Executable reference:** a pinned code/database environment such as Agent
+  World Model or the maintained tau benchmark family. BrowserGym, WorkArena,
+  and OSWorld are later replications.
 - **Optional reasoning tiers:** small, medium, and strong language models with
   explicit token budgets.
 - **Optional verifier:** tests, database invariants, browser assertions, policy
   checks, or human approval.
 
-The package should ship adapters and synthetic fixtures, not redistribute model
-weights or proprietary task data.
+None of these external adapters is currently implemented. The package should
+ship adapters and synthetic fixtures, not redistribute model weights or
+proprietary task data.
 
 ### 11.2 What the router observes
 
@@ -726,11 +775,18 @@ The action space may be factorized:
 6. choose verifier;
 7. stop.
 
+This is the target action space. The implemented learned router performs binary
+cheap-versus-accurate escalation with configured token budgets and rollout
+depths; verification is currently coupled to the accurate route. It does not
+jointly learn all seven choices. The current planner also checks affordability
+after a route is selected rather than masking every infeasible route before
+scoring, so portfolios with more than two tiers require redesign.
+
 A monolithic categorical action is acceptable for small experiments. At scale,
 factorization or constrained optimization will generalize better to new model
 portfolios.
 
-### 11.4 Self-learning loop
+### 11.4 Target self-learning loop
 
 ```mermaid
 flowchart LR
@@ -745,6 +801,10 @@ flowchart LR
 Only verified or clearly labelled weak evidence enters the corresponding
 training objective. Model-generated trajectories must never be silently
 relabeled as real outcomes.
+
+The repository contains replay, online calibration, and learner components but
+does not yet evaluate this loop over multiple frozen train/deploy/collect
+rounds. No self-improvement result is claimed.
 
 ## 12. Relationship to RLHF and preference optimization
 
@@ -801,9 +861,13 @@ Decision: make causal estimation an optional, well-tested evaluation module.
 Require propensity logging from day one. Do not require every simulator to
 implement a causal model.
 
+The current SQLite OPE path is only an instrumentation diagnostic: it conditions
+on selected randomized verification events and does not compare complete router
+policies against an independent randomized online ranking.
+
 ## 14. Enterprise and agent integration
 
-### 14.1 Deployment forms
+### 14.1 Target deployment forms
 
 - **Embedded Python:** direct import from PyPI.
 - **Planner sidecar:** containerized HTTP/gRPC/MCP service with model adapters.
@@ -844,95 +908,36 @@ high-fidelity models change the feasible compute policy.
 
 ## 15. Repository architecture
 
-The target repository is:
+The implemented repository is organized as:
 
 ```text
-montecarlgym/
-  pyproject.toml
-  README.md
-  LICENSE
-  CONTRIBUTING.md
-  src/montecarlgym/
-    agent.py
-    config.py
-    types.py
-    planner.py
-    gym_wrapper/
-      base.py
-      snapshot.py
-      deepcopy.py
-      event_log.py
-    core/
-      tree.py
-      path.py
-      mcts.py
-      expansion.py
-      backup.py
-      budget.py
-      transpositions.py
-    policies/
-      tree_policies.py
-      rollout_policies.py
-      action_selection.py
-      stopping.py
-    evaluators/
-      base.py
-      rollout.py
-      value.py
-      mixed.py
-      neural.py
-    bayes/
-      conjugate.py
-      transition_models.py
-      root_sampling.py
-    sharing/
-      rave.py
-      mast.py
-    adaptive/
-      models.py
-      portfolio.py
-      routing.py
-      discrepancy.py
-      calibration.py
-      replay.py
-      causal.py
-    integrations/
-      gymnasium.py
-      pytorch.py
-      transformers.py
-      mcp.py
-      browsergym.py
-      workarena.py
-    experiments/
-      runner.py
-      registry.py
-      metrics.py
-      artifacts.py
-  experiments/
-    configs/
-    suites/
-    run.py
-  tests/
-    unit/
-    integration/
-    statistical/
-    regression/
-  paper/
-    main.tex
-    references.bib
+src/montecarlgym/
+  core/            # tree, paths, MCTS, expansion, backup, budgets
+  gym_wrapper/     # native snapshot and validated deep-copy strategies
+  policies/        # tree, rollout, and final-action policies
+  evaluators/      # rollout, value, neural, and mixed evaluation
+  bayes/           # conjugate statistics, model, root sampling, policies
+  sharing/         # RAVE and MAST
+  adaptive/        # budget, evidence, routing, stopping, learning, frontier
+  experiments/     # toy, FrozenLake, SQLite, analysis, artifacts, protocols
+  agent.py, models.py, planner.py, presets.py, replay.py, causal.py
+experiments/       # runners and mutable/frozen protocol locations
+examples/          # runnable Phase 1-5A examples
+tests/             # unit and integration tests
+docs/              # status, architecture, experiments, phase and release docs
+paper/             # LaTeX proposal and bibliography
 ```
 
-The repository now implements the Phase 1 UCT vertical slice, Phase 2 classical
-compatibility presets, and the Phase 3 multi-fidelity vertical slice. Phase 3
-includes strict multi-resource reservations, branch-local compute evidence,
-fixed routing/stopping policies, typed provenance, verified replay pairs,
-online discrepancy estimates, and a dependency-free learned-value/executable-
-rollout diagnostic. Learned routing and external benchmark integrations remain
-milestones.
+The authoritative implementation matrix is in
+[`RESEARCH_STATUS.md`](RESEARCH_STATUS.md). External model, browser, MCP,
+service, event-log, and distributed-execution packages are target components,
+not present modules.
 
 ## 16. Configuration and dependency injection
 
-A fully resolved run configuration is immutable and serializable:
+The target is a fully resolved, immutable, serializable configuration. This
+illustrative future configuration is not accepted verbatim by the current
+runner:
 
 ```yaml
 seed: 41
@@ -961,7 +966,7 @@ Configuration constructs objects through a registry. Core modules receive
 instances, not global singletons. A programmatic API remains available for
 custom research code.
 
-## 17. Observability and artifacts
+## 17. Target observability and artifacts
 
 One search trace records:
 
@@ -979,6 +984,11 @@ Aggregate reports include success, regret, risk, calibration, tokens, cost,
 latency, model-call mix, and Pareto-frontier coordinates. Raw chain-of-thought
 is neither required nor stored; structured decisions and model outputs are
 sufficient for reproducibility and safer operations.
+
+Current SQLite records cover much of the decision ledger, but replay/runtime
+metadata does not yet contain every environment, prompt, harness, grader, and
+verifier version above. Reanalysis also does not reject every record or manifest
+hash mismatch. Those gaps must close before a confirmatory freeze.
 
 ## 18. Safety and reliability requirements
 
@@ -1006,7 +1016,7 @@ sufficient for reproducibility and safer operations.
 - robust max selects the most-visited child;
 - mix backup stays within component bounds;
 - RAVE does not double-count the direct edge;
-- accurate-call, token, and cost limits are never exceeded.
+- configured planning-call accurate-call, token, and cost limits are never exceeded.
 
 ### 19.2 Statistical tests
 
@@ -1052,13 +1062,16 @@ sufficient for reproducibility and safer operations.
 
 - Implemented: model portfolio, fixed routers, discrepancy model, stop policies.
 - Implemented: one fitted cheap model and one isolated executable benchmark.
-- Implemented: token/depth/model routing and hard cost, token, accurate-call,
-  model-call, environment-call, iteration, and cooperative deadline accounting.
+- Implemented: compute actions carry configured token/depth/model choices, with
+  hard cost, token, accurate-call, model-call, environment-call, iteration, and
+  cooperative deadline accounting. Joint learned choice over those dimensions
+  is not implemented.
 
-### Phase 4: learned routing and verified self-improvement
+### Phase 4: learned routing and verified-replay infrastructure
 
-- Implemented: train a contextual linear EVC proxy from persisted verified
-  replay and use it for cost-aware branch escalation and learned stopping.
+- Implemented: train a contextual linear absolute-discrepancy/EVC proxy from
+  persisted verified replay and use it for cost-aware branch escalation and
+  stopping; this is not a counterfactual decision-utility label.
 - Implemented: model-pair contextual discrepancy correction with held-out
   empirical intervals and calibration diagnostics.
 - Implemented: append-only validated replay, exact route propensities,
@@ -1070,20 +1083,40 @@ sufficient for reproducibility and safer operations.
   fingerprints, artifact hashes, source-revision checks, and untouched-output
   guards.
 
-This is infrastructure readiness, not completion of the empirical paper. The
+This is infrastructure readiness, not a demonstrated self-improvement loop or
+completion of the empirical paper. The
 current EVC label is absolute verified discrepancy, not a directly randomized
 causal value-of-compute target. Learned stopping beyond that net-EVC rule and
 L2/L3 benchmark adapters remain future work.
 
-### Phase 5: scale and ecosystem
+### Phase 5A: SQLite mechanism pilot
 
-- Implemented as Phase 5A empirical readiness: one offline SQLite L2 vertical
-  slice with disposable executable verification, explicit evidence provenance,
-  matched-budget baselines, immutable raw artifacts, and the paired statistical
-  analysis needed to revise a confirmatory candidate.
+- Implemented: one offline SQLite mechanism fixture with disposable executable
+  verification, explicit evidence provenance, several local comparison methods,
+  immutable raw artifacts, and exploratory paired summaries.
+- Not established: sequential branch allocation, full required baselines,
+  isolated ablations, task-level independent replication, the declared
+  confirmatory tests, or end-to-end matched episode budgets.
 - Deliberately not implemented in Phase 5A: future-confirmatory SQLite tasks or
   seeds, protocol freezing, external registration, remote foundation models,
   BrowserGym/L3, or paper-result generation.
+
+### Phase 5B: sequential evidence-acquisition study
+
+- Run the oracle-headroom gate before building a full benchmark integration.
+- Add a pinned, stateful executable tool environment and at least two held-out
+  task families.
+- Add candidate/macro-action generation, information-state identity, and a
+  fixed versioned context/harness policy.
+- Learn decision-utility or regret-reduction targets; retain absolute
+  discrepancy only as a feature/baseline.
+- Compare FidelityMCTS with dynamic non-tree, reflection, parallel sampling,
+  aggregation, query-routing, and fixed-cascade baselines.
+- Enforce both per-decision and episode-level budgets and measure repeated-run
+  reliability, state-based success, fault recovery, and tail costs.
+
+### Later scale and ecosystem work
+
 - Planner service, batching, distributed traces, and adapter SDK.
 - PyPI release, OCI image, Hugging Face artifacts, and npm/agent plugin.
 - External benchmark reproductions and independent contributor tasks.
@@ -1093,6 +1126,7 @@ L2/L3 benchmark adapters remain future work.
 | Decision | Choice | Reason |
 |---|---|---|
 | Research center | Adaptive compute and fidelity routing | Algorithm count alone is weak novelty |
+| Controller status | MCTS is one candidate, not an assumption | A simpler controller may dominate on open, partially observed agent tasks |
 | Core abstraction | `GenerativeModel`, not Gym only | Preserves Gym UX and standalone use |
 | Tree representation | State nodes plus action edges/outcomes | Correct stochastic and transposition semantics |
 | Algorithm design | Presets over separate engines | Prevents duplicated control flow |
@@ -1103,14 +1137,20 @@ L2/L3 benchmark adapters remain future work.
 | High-fidelity execution | Sandbox/dry run by default | Search must not create speculative side effects |
 | Open source | Modular core plus optional adapters | Low install weight and broad contribution surface |
 
-## 22. Conference-level falsifiable claim
+## 22. Revised falsifiable claims
 
-The paper should not claim “we support more MCTS algorithms.” It should test:
+The primary paper should not claim “we support more MCTS algorithms” or that
+the implemented router already learns every compute dimension. It should test:
 
-> Under equal resource and risk budgets, a branch-level adaptive planner that
-> jointly allocates simulator fidelity, model tier, token budget, rollout depth,
-> verification, and stopping achieves a better success-cost-risk Pareto
-> frontier than single-model search, query-level routing, and fixed cascades.
+> On stateful, sequential, executable tool tasks with heterogeneous evidence
+> costs, a controller that selectively acquires predictive and executable
+> evidence improves repeated-run verified success versus cost and risk over
+> fixed, query-level, sampling/aggregation, and dynamic non-tree policies.
 
-This claim is novel enough to investigate, useful if true, and clear enough to
-falsify. The experiment plan defines the evidence required.
+Only if the comparison supports it may a secondary MCTS-specific claim be made:
+
+> Conditional on measurable oracle headroom, tree-structured branch allocation
+> adds value beyond a capacity- and budget-matched non-tree controller.
+
+The SQLite fixture cannot test either claim. The experiment plan defines the
+new evidence and stop gates required before preregistration.

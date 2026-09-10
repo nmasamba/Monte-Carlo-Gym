@@ -1,8 +1,12 @@
 # Open-Source and Release Plan
 
+**Status as of 2026-09-10:** pre-alpha planning document. None of the listed
+distribution surfaces is asserted to be publicly released. Research positioning
+must follow [`RESEARCH_STATUS.md`](RESEARCH_STATUS.md).
+
 ## 1. Product surfaces
 
-MonteCarloGym should be developed in public on GitHub and released through
+MonteCarloGym is intended to be developed in public on GitHub and released through
 several complementary channels:
 
 | Surface | Artifact | Audience |
@@ -70,6 +74,11 @@ one deterministic fixture.
 
 ## 5. Release gates
 
+These are maturity gates, not claims implied by the current internal version
+number. In particular, local version `0.2.0a2` does not satisfy the research-beta
+gate below. Before a public release, either align the version scheme with these
+gates or relabel the gates; do not infer readiness from the version alone.
+
 ### 0.1 alpha
 
 - public protocols;
@@ -81,13 +90,16 @@ one deterministic fixture.
 ### 0.2 research beta
 
 - six classical presets;
-- first learned-model/executable-simulator pair;
-- full traces and Pareto reports;
-- router baselines and ablations.
+- a genuinely sequential predictive/executable evidence pair;
+- independently verified state and episode-scoped resource accounting;
+- full traces, reliability and Pareto reports;
+- fixed, query-level, capacity-matched non-tree, and MCTS baselines;
+- isolated router and controller ablations.
 
-Phase 5A satisfies the first local executable-pair and analysis-infrastructure
-portion of this gate with SQLite. It does not satisfy independent benchmark
-reproduction, sequential L2/L3 breadth, or confirmatory evidence.
+Phase 5A exercises the local executable-pair and analysis infrastructure with
+SQLite, but does not satisfy this gate. It is one-decision, uses normalized
+costs, has non-isolated ablations, and supplies neither sequential headroom nor
+confirmatory evidence.
 
 ### 0.3 service beta
 
@@ -108,18 +120,19 @@ reproduction, sequential L2/L3 breadth, or confirmatory evidence.
 
 The project should be described as:
 
-> A simulator-portfolio planning system that makes MCTS compatible with
-> Gymnasium, learned world models, executable agent environments, and explicit
-> inference budgets.
+> A research kernel for selectively acquiring predictive and isolated
+> executable evidence during stateful agent planning under measured resource
+> and risk constraints.
 
 The differentiator is not “fast Python MCTS” or “many algorithms.” Those are
-valuable engineering goals. The research identity is the joint, branch-level
-optimization of task decisions and compute decisions under fidelity, token,
-latency, cost, and risk constraints.
+valuable engineering goals. The proposed research contribution is selective,
+branch-local evidence acquisition with independent verification. MCTS is one
+controller candidate, not the novelty by itself, and must earn its complexity
+against capacity-matched non-tree alternatives.
 
 ## 7. Security disclosure
 
-Publish:
+Before exposing executable-environment or agent-service adapters, publish:
 
 - `SECURITY.md` with a private reporting channel;
 - supported versions;

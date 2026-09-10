@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
+      contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
@@ -45,7 +46,9 @@ jobs:
           python examples/phase2_puct.py
           python examples/phase3_multifidelity.py
           python examples/phase4_learned_routing.py
-          python -m build
-          python -m twine check dist/*
+          python -m build --outdir release-dist
+          python -m twine check release-dist/*
       - name: Publish distributions
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: release-dist/

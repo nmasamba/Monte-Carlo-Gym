@@ -1,52 +1,62 @@
 # MonteCarloGym / FidelityMCTS
 
-MonteCarloGym is a proposed open-source planning library for Gymnasium-compatible
-environments. FidelityMCTS is its research layer: a planner that learns not only
-which task action to take, but also how to allocate inference and simulation
-compute while searching.
+MonteCarloGym is a pre-alpha planning library for Gymnasium-compatible
+environments. FidelityMCTS is its experimental research layer: a planner that
+can allocate inference and simulation compute while choosing a task action.
 
-The central research question is:
+Following a September 2026 literature and capability review, the central
+research question is deliberately narrower:
 
-> Can a planner learn when to think, which model to use, when to simulate,
-> when to verify, and when to act?
+> On stateful, sequential tool tasks, can selective predictive and executable
+> evidence improve verified success versus cost and risk over strong fixed,
+> query-level, and non-tree test-time-scaling policies?
+
+The project is continuing with an empirical pivot, not proceeding to the
+existing confirmatory candidate. MCTS is now a method to test against non-tree
+controllers rather than a presumed part of the winning result. See the
+[canonical research status](docs/RESEARCH_STATUS.md) for the fit assessment,
+evidence, revised claim, next-study gates, and redirect criteria.
 
 The repository is deliberately split into two layers:
 
 1. **A reusable MCTS kernel** with transactional Gymnasium state handling,
    state/action trees, transpositions, UCT, PUCT, Thompson sampling, RAVE/MAST,
    neural evaluation, and interchangeable backup operators.
-2. **An adaptive-compute layer** with model portfolios, multi-fidelity
-   simulation, branch-level routing, token/depth budgets, stopping rules,
-   verified replay, discrepancy learning, and optional causal correction.
+2. **Adaptive-compute research infrastructure** with portfolio-based frontier
+   valuation, binary cheap/accurate routing, fixed token/depth settings,
+   stopping rules, verified replay, discrepancy learning, and exploratory
+   off-policy utilities. Multi-model tree transitions and joint routing are
+   target architecture, not current features.
 
 The repository contains:
 
 - a revised architecture and API specification;
-- a complete Phase 1 classical UCT vertical slice with transactional
+- a Phase 1 classical UCT vertical slice with transactional
   Gymnasium-style simulation, stochastic outcome links, random rollout, mean
-  backup, hard budgets, and subtree reuse;
+  backup, per-planning-call hard budgets, and subtree reuse;
 - Phase 2 compatibility presets for PUCT policy/value search, direct and mixed
   evaluation, Thompson and root sampling, robust/mix backup, RAVE, and MAST;
-- a complete Phase 3 multi-fidelity slice with branch-level compute actions,
-  conservative resource reservations, fixed routers and stopping policies,
-  provenance-aware evidence, verified replay, and online discrepancy estimates;
+- Phase 3 multi-fidelity frontier/action valuation with conservative resource
+  reservations, fixed routers and stopping policies, provenance-aware evidence,
+  verified replay, and online discrepancy estimates; outer-tree transitions
+  still come from one simulation model;
 - a Phase 4 learned-routing slice with persistent verified replay, calibrated
-  contextual discrepancy and EVC-proxy models, randomized audit traffic,
+  contextual discrepancy and discrepancy-as-EVC-proxy models, randomized audit traffic,
   propensity-aware off-policy estimators, and budget-aware MCTS frontiers;
-- a real, optional-Gymnasium FrozenLake exploratory pilot plus fingerprinted
-  preregistration and confirmatory-run guards;
+- an optional-Gymnasium FrozenLake exploratory pilot plus fingerprinting and
+  confirmatory-run guard mechanics;
 - an offline executable SQLite L2 query construction/repair benchmark with
-  immutable split fixtures, disposable verification, matched-budget baselines,
-  immutable raw records, and a complete exploratory analysis pipeline;
+  immutable split fixtures, disposable verification, ten local comparison
+  labels, immutable raw records, and exploratory analysis utilities;
 - a deterministic learned-linear/executable-tree integration benchmark;
-- an experiment protocol suitable for a research implementation;
+- a revised experiment protocol with explicit validity gates for the next study;
 - a runnable, dependency-free toy benchmark for multi-fidelity routing;
 - tests and CI;
 - a draft LaTeX paper and bibliography.
 
-The toy harness is a diagnostic for the routing abstraction, not evidence for
-the paper's empirical claims. The draft paper intentionally labels all
-experiments as planned until measurements are run.
+The toy, FrozenLake, and SQLite harnesses are diagnostics, not evidence for the
+paper's empirical claims. The draft paper distinguishes those completed local
+runs from the unrun sequential and confirmatory study.
 
 ## Quick start
 
@@ -78,6 +88,8 @@ The command writes per-run JSONL records and an aggregate `summary.json`.
 
 ## Documents
 
+- [`docs/RESEARCH_STATUS.md`](docs/RESEARCH_STATUS.md): canonical implementation
+  status, September 2026 fit assessment, revised claim, and next-study gates.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): revised system design.
 - [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md): hypotheses, baselines,
   benchmarks, metrics, ablations, and statistical protocol.
@@ -89,46 +101,20 @@ The command writes per-run JSONL records and an aggregate `summary.json`.
 - [`docs/PHASE5A_SQLITE.md`](docs/PHASE5A_SQLITE.md): offline L2 benchmark,
   raw artifacts, analysis, power diagnostics, and preregistration boundary.
 - [`paper/main.tex`](paper/main.tex): draft research paper.
+- [`output/pdf/FidelityMCTS_draft.pdf`](output/pdf/FidelityMCTS_draft.pdf):
+  rebuilt September 2026 proposal PDF.
 
 ## Status
 
-Phases 1–4 are implemented as research infrastructure. One dependency-injected
-classical engine provides UCT, transactional native/deep-copy simulation,
-explicit state/action/outcome graph statistics and paths, random rollouts, mean
-backup, hard iteration/call/cost budgets, `MCTSAgent.compute_action()`, and
-basic subtree reuse. The dependency-free fixture example runs without
-Gymnasium; Gymnasium remains an optional extra.
+The source version is `0.2.0a2`. Phases 1-2 are implemented and tested as a
+classical MCTS kernel. Phases 3-4 are implemented as adaptive-compute research
+infrastructure. Phase 5A is an executable, deterministic SQLite mechanism pilot.
 
-Phase 2 adds PUCT with framework-neutral policy/value predictors, direct and
-mixed evaluation, Crazy Stone robust/mix backup, Normal-Gamma/Dirichlet
-Bayesian statistics, local Thompson selection, a frozen-belief tabular
-root-sampled generative model, and independently composable RAVE/MAST sharing.
-
-Phase 3 adds `AdaptiveComputePlanner`, fixed cheap-only, accurate-only, cascade,
-and ambiguity-threshold routers, injected stopping and aggregation policies,
-full cost/token/model/environment-call accounting, evidence provenance,
-verified cheap/accurate replay pairs, and an online discrepancy model. Its
-dependency-free shallow-tree benchmark pairs a fitted cheap value model with an
-isolated executable rollout model. Both included adaptive benchmarks are
-engineering diagnostics, not evidence for the paper's empirical claims.
-
-Phase 4 adds a dependency-free linear EVC proxy, contextual discrepancy
-calibration with empirical intervals, append-only verified JSONL replay,
-epsilon-greedy audit routes with exact propensities, IPS/self-normalized
-IPS/doubly robust estimators, and adaptive frontier evaluation whose nested use
-is absorbed by the outer MCTS budget. The FrozenLake harness executes primary
-methods and declared ablations on isolated native clones, while keeping pilot,
-candidate-protocol, frozen-registration, and confirmatory-output locations
-separate.
-
-Phase 5A adds one deterministic, standard-library SQLite L2 benchmark and the
-first executable matched-budget/paired-analysis path. The EVC target remains
-absolute cheap-versus-verified discrepancy: a transparent utility proxy, not a
-causal estimate. The one-decision L2 slice does not establish sequential tree-
-reuse effects. BrowserGym/L3, remote model tiers, learned stopping beyond the
-proxy, distributed execution, broader held-out benchmark families, and the
-confirmatory study remain planned. No included pilot is a paper result, and no
-future-confirmatory SQLite task or seed is materialized.
+There is no external stateful agent benchmark adapter, counterfactual
+decision-utility learner, frozen preregistration, confirmatory run, or paper
+result. In particular, the current one-decision SQLite fixture does not test the
+revised sequential-agent claim. Detailed status is maintained only in
+[`docs/RESEARCH_STATUS.md`](docs/RESEARCH_STATUS.md) to prevent roadmap drift.
 
 ## Installing from PyPI
 

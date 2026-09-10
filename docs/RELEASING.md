@@ -1,5 +1,8 @@
 # Releasing MonteCarloGym to PyPI
 
+**Status as of 2026-09-10:** release procedure only. The repository version is
+`0.2.0a2`; this document does not assert that it has been published.
+
 PyPI distributions contain the dependency-light classical kernel, adaptive
 protocols, and experiment utilities. Gymnasium remains the optional `gym`
 extra; no neural framework is required for PUCT because predictors are injected.
@@ -10,9 +13,8 @@ extra; no neural framework is required for PUCT because predictors are injected.
    `src/montecarlgym/__init__.py`. PyPI never permits replacing a file for a
    version that has already been uploaded.
 2. Ensure the intended package name is available or owned by the release team.
-   The official PyPI and TestPyPI JSON endpoints both returned `404` for
-   `montecarlgym` on 2026-07-29, but name availability can change before the
-   first upload, so recheck immediately before release.
+   Recheck the official PyPI and TestPyPI project pages immediately before the
+   first upload; an old availability check is not evidence of current ownership.
 3. Run the full tests, experiment smoke, examples, and isolated wheel test.
 4. Commit the release, merge it to `main`, and create a signed or annotated tag,
    for example `v0.2.0a2`.
@@ -37,8 +39,8 @@ python experiments/run_sqlite.py \
   --stage exploratory \
   --config experiments/pilots/sqlite_l2_smoke.json \
   --output /tmp/montecarlgym-sqlite-smoke
-python -m build
-python -m twine check dist/*
+python -m build --outdir release-dist/0.2.0a2
+python -m twine check release-dist/0.2.0a2/*
 ```
 
 Create a separate TestPyPI account/token, then upload:
@@ -46,7 +48,7 @@ Create a separate TestPyPI account/token, then upload:
 ```bash
 python -m twine upload \
   --repository-url https://test.pypi.org/legacy/ \
-  dist/*
+  release-dist/0.2.0a2/*
 ```
 
 Test the exact wheel from TestPyPI while resolving optional dependencies from
@@ -80,7 +82,7 @@ before the project exists. Alternatively, a project owner can perform the first
 production upload manually:
 
 ```bash
-python -m twine upload dist/*
+python -m twine upload release-dist/0.2.0a2/*
 ```
 
 After publication, verify from a new environment:
@@ -92,5 +94,7 @@ python -m pip install --no-cache-dir 'montecarlgym[gym]==0.2.0a2'
 python -c 'import montecarlgym; print(montecarlgym.__version__)'
 ```
 
-Do not upload from a dirty worktree, reuse a version, or publish synthetic toy
-measurements as research results.
+Build into a new, empty version-specific directory and upload only those exact
+files. The tracked `dist/` directory contains a historical wheel and must never
+be used as an upload glob. Do not upload from a dirty worktree, reuse a version,
+or publish synthetic toy measurements as research results.

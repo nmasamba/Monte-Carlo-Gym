@@ -37,5 +37,5 @@ jobs:
           python examples/phase4_learned_routing.py
       - name: Distribution metadata
         run: |
-          python -m build
-          python -m twine check dist/*
+          python -m build --outdir ci-dist
+          python -m twine check ci-dist/*

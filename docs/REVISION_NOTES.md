@@ -1,9 +1,10 @@
-# Revision Notes: Original Plan to FidelityMCTS
+# Revision notes: original plan to the September 2026 research pivot
 
-The original MonteCarloGym plan remains the classical foundation. Revision 2
-changes the research center of gravity.
+This file records changes in direction. The current decision, implementation
+boundary, validity blockers, and next-study gates are canonical in
+[`RESEARCH_STATUS.md`](RESEARCH_STATUS.md).
 
-## Preserved
+## Preserved from the original plan
 
 - transactional Gymnasium state snapshot/restore;
 - state nodes, action edges, stochastic outcome links, and explicit search
@@ -14,50 +15,75 @@ changes the research center of gravity.
   RAVE, and MAST;
 - strict handling of termination, truncation, RNG state, and value perspective.
 
-## Changed
+## Revision 2: adaptive-compute research layer
 
-| Original emphasis | Revision 2 |
+Revision 2 moved the center of gravity from a broad algorithm library toward a
+portfolio of predictive and executable evidence sources, explicit resource
+accounting, adaptive routing, persistent verified replay, and a
+preregisterable experiment harness. It proposed branch-level joint allocation
+of model, tokens, depth, verification, and stopping as the main research claim.
+
+That proposal remains useful target architecture, but subsequent implementation
+and literature review showed that the claim was broader than the delivered
+system and too close to rapidly developing test-time-compute routing work.
+
+## Revision 3: evidence acquisition first (September 2026)
+
+Revision 3 narrows the research program without discarding the classical
+kernel or the evidence-routing infrastructure.
+
+| Earlier emphasis | Revision 3 decision |
 |---|---|
-| broad MCTS algorithm library | classical kernel plus adaptive-compute research layer |
-| one environment/simulator per search | portfolio of cheap, intermediate, and executable models |
-| choose a task action | jointly choose task and compute actions |
-| fixed rollout/evaluation budget | branch-level model, token, depth, verifier, and stop choices |
-| simulator values enter backup directly | provenance-aware evidence and discrepancy aggregation |
-| tree data for reuse | paired verified replay for calibration and self-improvement |
-| ordinary experiment examples | preregisterable, matched-budget, Pareto experiment harness |
-| predictive logging | propensity logging and optional causal/off-policy evaluation |
-| embedded Python agent | Python core plus deployable planner service and thin agent adapters |
+| MCTS as the defining controller | MCTS is one controller candidate that must beat capacity-matched non-tree policies |
+| joint optimization of every compute dimension | isolate selective predictive-versus-executable evidence acquisition first |
+| one simulator portfolio spanning tree transitions | current portfolio code is described accurately as frontier/action valuation only |
+| query-level success and average cost | independently verified terminal state, repeated-run reliability, episode totals, and tail risk |
+| finite legal-action enumeration | add proposal provenance, proposal cost, macro-actions, or progressive widening for open tool spaces |
+| context and harness as background details | freeze them as first-class experimental conditions |
+| SQLite Phase 5A as readiness evidence | retain it as a one-decision mechanism and instrumentation diagnostic |
+| verified replay as self-improvement evidence | treat replay, calibration, and OPE as infrastructure until a multi-round loop is evaluated |
 
-## Research claim
+The revised primary question is:
 
-The revised claim is not that MonteCarloGym contains more algorithms or is the
-fastest Python implementation. Those may become useful engineering properties.
-The falsifiable paper claim is:
+> In a fixed, versioned agent harness with independently verified task state,
+> can branch-local selection between predictive evidence and isolated
+> executable evidence improve repeated-run verified success versus measured
+> cost, latency, and risk over fixed, query-level, and non-tree adaptive
+> baselines?
 
-> Under equal resource and risk budgets, branch-level joint allocation of
-> simulator fidelity, model tier, token budget, rollout depth, verification,
-> and stopping improves the success-cost-risk Pareto frontier over single-model
-> search, query-level routing, and fixed cascades.
+A separate, conditional question asks whether an MCTS controller improves that
+frontier over a capacity- and budget-matched non-tree controller once the task
+has demonstrated enough oracle headroom to justify search.
+
+## Current implementation boundary
+
+- The classical kernel, transactional native/deep-copy snapshots, cost ledgers,
+  frontier evaluator, persistent replay, simple discrepancy calibration,
+  binary learned routing, randomized audits, OPE utilities, and
+  preregistration mechanics exist and have tests.
+- The adaptive evaluator scores already-created frontier actions; outer MCTS
+  still obtains transitions from a single environment model.
+- The learned router chooses only cheap versus accurate evaluation. Token and
+  depth choices are fixed, verification is coupled to accurate evaluation, and
+  risk is logged rather than enforced as a hard ceiling.
+- The FrozenLake example applies a fresh planning-call budget at every
+  environment step. It is not a hard episode-budget experiment.
+- The SQLite fixture is one decision, uses normalized costs, lacks the required
+  global routers, and cannot test tree reuse or sequential planning.
+- No confirmatory protocol or evaluated multi-round self-learning loop exists.
 
 ## Scope guardrails
 
-- Predictive MCTS may replace or augment policy optimization in an RLHF-style
-  loop, but not preference elicitation, reward validation, or safety review.
-- Causal correction is required where logged router selection causes bias; a
-  universal causal world model is not required.
-- Learned simulation is cheap evidence, not verified truth.
-- Executable simulation occurs in clones or sandboxes; speculative search does
-  not act on production systems.
-- The included toy harness validates interfaces and accounting only. It is not
-  evidence for the paper's empirical hypothesis.
-- The Phase 3 shallow-tree harness integrates learned and executable evidence,
-  but remains a controlled engineering diagnostic rather than a paper result.
-- Phase 4 supplies persistent verified replay, contextual calibration, learned
-  EVC-proxy routing, randomized audit traffic, off-policy estimators, adaptive
-  MCTS-frontier evaluation, and guarded preregistration mechanics. Its real
-  FrozenLake integration is still an exploratory L1 pilot, not paper evidence.
-- Phase 5A supplies an offline SQLite L2 executable benchmark, objective
-  disposable verification, all required local matched-budget baselines,
-  immutable raw records, paired/Pareto/calibration/OPE/power analysis, and an
-  unregistered protocol candidate. Future-confirmatory fixtures and seeds are
-  deliberately absent.
+- Predictive search may complement policy optimization in an RLHF-style loop;
+  it does not replace preference elicitation, reward validation, or safety
+  review.
+- Logged-policy correction is useful where selection induces bias; a universal
+  causal world model is not required.
+- Learned simulation is provisional evidence, not verified truth.
+- Executable probes run only in disposable clones or sandboxes; speculative
+  search must not act on production systems.
+- Verification must identify its implementation and version and retain
+  assertion-level evidence; a Boolean success flag alone is insufficient.
+- Toy, FrozenLake, and SQLite fixtures establish engineering behavior only.
+- No confirmatory claim is made until a fresh sequential protocol passes every
+  gate in `RESEARCH_STATUS.md` and is frozen before data collection.

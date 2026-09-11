@@ -1,5 +1,17 @@
 # Experiment harness
 
+**As of:** 2026-09-10
+
+**Status:** exploratory infrastructure; no paper result or frozen study
+
+**Research decision and gates:**
+[`docs/RESEARCH_STATUS.md`](../docs/RESEARCH_STATUS.md)
+
+`SearchBudget` currently applies to one planning call. The FrozenLake runner
+sums several such calls across an episode but does not enforce a single
+episode-level hard envelope. Do not interpret its protocol budget points as
+matched end-to-end episode budgets until that ledger is implemented.
+
 Run the controlled interface diagnostic:
 
 ```bash
@@ -68,10 +80,10 @@ These are exploratory pilots. Use them for debugging, budget selection,
 variance estimates, and power analysis only. Do not copy their endpoint values
 into a paper's confirmatory results.
 
-## Phase 5A offline executable SQLite L2
+## Phase 5A offline executable SQLite mechanism fixture
 
-The dependency-free L2 smoke runs every required local baseline and prescribed
-ablation at five hard budgets:
+The dependency-free smoke runs ten local comparison methods and six named
+diagnostic variants at five per-call budgets:
 
 ```bash
 python experiments/run_sqlite.py \
@@ -94,6 +106,13 @@ runner refuses confirmatory and preregistered output paths. See
 `docs/PHASE5A_SQLITE.md` for the execution boundary, record schema, analysis,
 ablations, power diagnostic, and approval gates.
 
+This is a one-decision instrumentation fixture. Its historical
+`fidelity_mcts` identifier does not run an outer MCTS tree, its ordered
+budget-limited "oracle" is not a guaranteed upper bound, and its named
+ablations/OPE/bootstrap do not implement the revised confirmatory design. The
+mutable candidate is retained for audit only and must not be frozen or promoted
+unchanged.
+
 ## Freeze before confirmatory data
 
 The directories have distinct roles:
@@ -106,7 +125,8 @@ The directories have distinct roles:
 | `output/pilots/` | New run directories only | Exploratory outcomes |
 | `output/confirmatory/<study-id>/<run-id>/` | New empty run only | Untouched confirmatory outcomes |
 
-After pilots, write a complete candidate with `"stage": "confirmatory"`,
+After all gates in `docs/RESEARCH_STATUS.md` pass, write a fresh complete
+candidate with `"stage": "confirmatory"`,
 including hypotheses, endpoint families, benchmark/data/checkpoint versions and
 hashes, splits, methods, ablations, budget grid, confirmatory seeds, exclusions,
 failure/retry policy, interval method, correction, and fixed stopping rule.
